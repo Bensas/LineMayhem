@@ -35,13 +35,6 @@ public class Spawner {
         soundId3 = soundPool.load(mainGame.getContext(), R.raw.line_explode2, 1);
         soundId4 = soundPool.load(mainGame.getContext(), R.raw.line_explode3, 1);
 
-
-        for (int i = 0; i < 5; i++){
-            verticalLines.add(new KillerVerticalLine());
-            horizontalLines.add(new KillerHorizontalLine());
-            Log.d("Spawner", "Added a pair of lines to the storage!");
-        }
-
     }
 
     public void update(int playerX, int playerY, MainGameScript mainGame){
@@ -71,7 +64,7 @@ public class Spawner {
         //Update lines
         for (KillerHorizontalLine line:horizontalLines) {
             line.update();
-            if (line.state == 1){
+            if (line.state == 2){
                 if (mainGame.gameState == 2){
                     if (line.direction){
                         if (line.startingSide && playerY < line.rate * (Globals.GAME_WIDTH - playerX) + line.startY){
@@ -92,18 +85,17 @@ public class Spawner {
                     }
                 }
             }
-            else if (line.state == 3){
-
+            else if (line.state == 4){
                 if (mainGame.gameState == 2 && mainGame.nextGameState == 0){
                     mainGame.currentScore += 1;
                 }
                 line.state = 0;
-                //mediaPlayer.stop();
+                line.rate = 0;
             }
         }
         for (KillerVerticalLine line: verticalLines){
             line.update();
-            if (line.state == 1) {
+            if (line.state == 2) {
                 if (mainGame.gameState == 2){
                     if (line.direction) {
                         if (line.startingSide && playerX > line.rate * playerY + line.startX) {
@@ -123,7 +115,7 @@ public class Spawner {
                         }
                     }
                 }
-            } else if (line.state == 3){
+            } else if (line.state == 4){
                 if (mainGame.gameState == 2 && mainGame.nextGameState == 0){
                     mainGame.currentScore += 1;
                 }
@@ -136,6 +128,7 @@ public class Spawner {
         for (KillerHorizontalLine line: horizontalLines){
             if (line.state == 0){
                 line.resetLine(playerY, rnd);
+                line.state = 1;
                 return  line;
             }
         }
@@ -147,6 +140,7 @@ public class Spawner {
         for (KillerVerticalLine line: verticalLines){
             if (line.state == 0){
                 line.resetLine(playerX, rnd);
+                line.state = 1;
                 return line;
             }
         }
@@ -176,20 +170,26 @@ public class Spawner {
 //    }
 
     public void draw(Canvas canvas){
+        int counter = 0;
         for (KillerHorizontalLine line: horizontalLines){
             line.draw(canvas);
+            //Log.d("Spawner.draw()", "Drew line number " + counter + ". Rate: " + line.rate + ". State: " + line.state);
+            counter++;
         }
         for (KillerVerticalLine line: verticalLines){
             line.draw(canvas);
+            //Log.d("Spawner.draw()", "Drew line number " + counter + ". Rate: " + line.rate + ". State: " + line.state);
+            counter++;
+
         }
     }
 
     public void reset(){
-        for (KillerHorizontalLine line: horizontalLines){
-            line.state = 0;
-        }
-        for (KillerVerticalLine line: verticalLines){
-            line.state = 0;
+        verticalLines.clear();
+        horizontalLines.clear();
+        for (int i = 0; i < 5; i++){
+            verticalLines.add(new KillerVerticalLine());
+            horizontalLines.add(new KillerHorizontalLine());
         }
         timerReduction = 0;
     }

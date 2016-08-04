@@ -14,7 +14,6 @@ import java.util.Random;
  * Created by Bensas on 02/06/16. (june)
  */
 public class KillerVerticalLine {
-    Random rnd = new Random();
     SoundPool soundPool;
 
     //startX and startY are assigned at the start and remain static.
@@ -25,15 +24,18 @@ public class KillerVerticalLine {
     //startingSide: 0 is bottom, 1 is top --- direction: 0 is leftwards, 1 is rightwards
     boolean startingSide, direction;
 
-    //0 means inactive, 1 means extending, 2 means exploding, 3 means hasExploded
+    //0 means inactive, 1 means extending, 2 means exploding, 3 means hasExploded (post-explosion animation is playing)
     int state;
 
-    public Paint whitePaint = new Paint();
-    public Paint redPaint = new Paint();
+    public Paint whitePaint;
+    public Paint redPaint;
     public int alphaCounter = 0;
 
     public KillerVerticalLine (){
         state = 0;
+
+        whitePaint = new Paint();
+        redPaint = new Paint();
 
         whitePaint.setColor(Color.WHITE);
         whitePaint.setStrokeWidth(6);
@@ -46,22 +48,20 @@ public class KillerVerticalLine {
     public void resetLine(int playerX, Random rnd){
         startingSide = rnd.nextBoolean();
         direction = rnd.nextBoolean();
-        speed = rnd.nextFloat() * 12f;
+        speed = 10f;
         if (speed <= 3){
             this.speed = 3;
         }
 
         startX = playerX + rnd.nextInt(350) - 175;
 
-        if (startX > Globals.GAME_WIDTH){
-            startY = Globals.GAME_WIDTH;
-        }
-
         if (!startingSide){
             startY = Globals.GAME_HEIGHT;
-            endY = Globals.GAME_HEIGHT;
+            endY = startY;
             endX = startX;
         } else {
+            startY = 0;
+            endY = startY;
             endX = startX;
         }
 
@@ -72,7 +72,7 @@ public class KillerVerticalLine {
         }
 
         state = 1;
-
+        alphaCounter = 0;
     }
 
     public void update(){
@@ -97,9 +97,9 @@ public class KillerVerticalLine {
     }
 
     public void draw(Canvas canvas){
-
         switch (state){
             case 1:
+                //Log.d(getClass().getSimpleName(), "Drawing lnine, rate: " + rate);
                 canvas.drawLine(startX, startY, endX, endY, whitePaint);
                 if (direction){
                     canvas.drawLine(startX + 5, startY, endX + 5, endY, redPaint);
@@ -107,16 +107,27 @@ public class KillerVerticalLine {
                     canvas.drawLine(startX - 5, startY, endX - 5, endY, redPaint);
                 } break;
             case 2:
+                //Log.d(getClass().getSimpleName(), "State: 2, rate: " + rate);
+
+
                 //soundPool.release()
                 explodeLine(canvas, redPaint);
-                alphaCounter += 1;
-                if (alphaCounter >= 10){
-                    state = 3;
-                }
+                state = 3;
                 break;
             case 3:
+                //Log.d(getClass().getSimpleName(), "State: 3, rate: " + rate);
+
+                alphaCounter += 1;
+                if (alphaCounter >= 10){
+                    state = 4;
+                }
+                break;
+            case 4:
+                //Log.d(getClass().getSimpleName(), "State: 4, rate: " + rate);
                 break;
             case 0:
+                //Log.d(getClass().getSimpleName(), "State: 0, rate: " + rate);
+
                 break;
         }
     }

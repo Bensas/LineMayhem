@@ -28,7 +28,7 @@ public class KillerHorizontalLine {
     //startingSide: 0 is left, 1 is right --- direction: 0 is downwards, 1 is upwards
     boolean startingSide, direction;
 
-    //0 means inactive, 1 means extending, 2 means exploding, 3 means hasExploded
+    //0 means inactive, 1 means extending, 2 means exploding, 3 means hasExploded (post-explosion animation is playing)
     int state;
 
     public Paint whitePaint = new Paint();
@@ -61,9 +61,11 @@ public class KillerHorizontalLine {
 
         if (!startingSide){
             startX = 0;
+            endX = startX;
+            endY = startY;
         } else {
             startX = Globals.GAME_WIDTH;
-            endX = Globals.GAME_WIDTH;
+            endX = startX;
             endY = startY;
         }
 
@@ -74,7 +76,7 @@ public class KillerHorizontalLine {
         }
 
         state = 1;
-
+        alphaCounter = 0;
     }
 
     public void update(){
@@ -101,6 +103,7 @@ public class KillerHorizontalLine {
 
         switch (state){
             case 1:
+                //Log.d(getClass().getSimpleName(), "Drawing lnine, rate: " + rate);
                 canvas.drawLine(startX, startY, endX, endY, whitePaint);
                 if (direction){
                     canvas.drawLine(startX, startY - 5, endX, endY - 5, redPaint);
@@ -108,16 +111,27 @@ public class KillerHorizontalLine {
                     canvas.drawLine(startX, startY + 5, endX, endY + 5, redPaint);
                 } break;
             case 2:
+                //Log.d(getClass().getSimpleName(), "State: 2, rate: " + rate);
+
                 //soundPool.release();
                 explodeLine(canvas, redPaint);
-                alphaCounter += 1;
-                if (alphaCounter >= 10){
-                    state = 3;
-                }
+                state = 3;
                 break;
             case 3:
+                //Log.d(getClass().getSimpleName(), "State: 3, rate: " + rate);
+
+                alphaCounter += 1;
+                if (alphaCounter >= 10){
+                    state = 4;
+                }
+                break;
+            case 4:
+                //Log.d(getClass().getSimpleName(), "State: 4, rate: " + rate);
+
                 break;
             case 0:
+                //Log.d(getClass().getSimpleName(), "State: 0, rate: " + rate);
+
                 break;
         }
     }

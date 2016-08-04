@@ -42,8 +42,9 @@ public class MainThread extends Thread {
             try{
                 canvas = this.surfaceHolder.lockCanvas();
                 synchronized (surfaceHolder){
+                    //THE ORIGINAL ORDER WAS UPDATE() FIRST AND DRAW() SECOND
+                    this.mainGameScript.update();
                     this.mainGameScript.draw(canvas);
-                    this.mainGameScript.update(); //THE ORIGINAL ORDER WAS UPDATE() FIRST AND DRAW() SECOND
                 }
             } catch (Exception e){
             }finally{
