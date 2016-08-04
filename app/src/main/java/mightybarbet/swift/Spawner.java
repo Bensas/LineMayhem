@@ -23,9 +23,7 @@ public class Spawner {
 
     SoundPool soundPool;
     int soundId1, soundId2, soundId3, soundId4;
-    AudioAttributes audioAttributes;
     int soundTimer = 0;
-    MediaPlayer sound1, sound2, sound3;
 
     int timer = 100, timerReduction = 30; //0= horizontal line, 1= vertical line
 
@@ -37,9 +35,13 @@ public class Spawner {
         soundId3 = soundPool.load(mainGame.getContext(), R.raw.line_explode2, 1);
         soundId4 = soundPool.load(mainGame.getContext(), R.raw.line_explode3, 1);
 
-//        sound1 = MediaPlayer.create(mainGame.getContext(), R.raw.line_explode1);
-//        sound2 = MediaPlayer.create(mainGame.getContext(), R.raw.line_explode2);
-//        sound3 = MediaPlayer.create(mainGame.getContext(), R.raw.line_explode3);
+
+        for (int i = 0; i < 5; i++){
+            verticalLines.add(new KillerVerticalLine());
+            horizontalLines.add(new KillerHorizontalLine());
+            Log.d("Spawner", "Added a pair of lines to the storage!");
+        }
+
     }
 
     public void update(int playerX, int playerY, MainGameScript mainGame){
@@ -48,11 +50,11 @@ public class Spawner {
         timer -= 1;
 
         //Every one second, we spawn a line and reset the timer
-        if (timer <= 0 && horizontalLines.size() + verticalLines.size() < 4){
+        if (timer <= 0){
             if (rnd.nextBoolean()){
-                horizontalLines.add(new KillerHorizontalLine(rnd.nextBoolean(), rnd.nextBoolean(), rnd.nextFloat() * 12f,playerY, soundPool, soundId1));
+                createHorizontalLine(playerY);
             } else {
-                verticalLines.add(new KillerVerticalLine(rnd.nextBoolean(), rnd.nextBoolean(), 10f,playerX, soundPool, soundId1));
+                createVerticalLine(playerX);
             }
             //mediaPlayer.start();
 
@@ -75,31 +77,27 @@ public class Spawner {
                         if (line.startingSide && playerY < line.rate * (Globals.GAME_WIDTH - playerX) + line.startY){
                             Log.d("Spawner.update()", "HORIZONTAL UP LINE - PlayerPosition= (" + playerX + ", " + playerY + ") - Rate: " + line.rate + "- StartY: " + line.startY);
                             mainGame.nextGameState = 3;
-                            playDestroySound();
                         } else if (!line.startingSide && playerY < line.rate * playerX + line.startY){
                             Log.d("Spawner.update()", "HORIZONTAL UP LINE - PlayerPosition= (" + playerX + ", " + playerY + ") - Rate: " + line.rate + "- StartY: " + line.startY);
                             mainGame.nextGameState = 3;
-                            playDestroySound();
                         }
                     } else {
                         if (line.startingSide && playerY > line.rate * (Globals.GAME_WIDTH - playerX) + line.startY) {
                             Log.d("Spawner.update()", "HORIZONTAL DOWN LINE - PlayerPosition= (" + playerX + ", " + playerY + ") - Rate: " + line.rate + "- StartY: " + line.startY);
                             mainGame.nextGameState = 3;
-                            playDestroySound();
                         } else if (!line.startingSide && playerY > line.rate * playerX + line.startY) {
                             Log.d("Spawner.update()", "HORIZONTAL DOWN LINE - PlayerPosition= (" + playerX + ", " + playerY + ") - Rate: " + line.rate + "- StartY: " + line.startY);
                             mainGame.nextGameState = 3;
-                            playDestroySound();
                         }
                     }
                 }
             }
-            else if (line.state == 4){
+            else if (line.state == 3){
 
                 if (mainGame.gameState == 2 && mainGame.nextGameState == 0){
                     mainGame.currentScore += 1;
                 }
-                horizontalLines.remove(line);
+                line.state = 0;
                 //mediaPlayer.stop();
             }
         }
@@ -111,54 +109,71 @@ public class Spawner {
                         if (line.startingSide && playerX > line.rate * playerY + line.startX) {
                             Log.d("Spawner.update()", "VERTICAL RIGHT LINE - PlayerPosition= (" + playerX + ", " + playerY + ") - Rate: " + line.rate + "- StartX: " + line.startX);
                             mainGame.nextGameState = 3;
-                            playDestroySound();
                         } else if (!line.startingSide && playerX > line.rate * (Globals.GAME_HEIGHT - playerY) + line.startX) {
                             Log.d("Spawner.update()", "VERTICAL RIGHT LINE - PlayerPosition= (" + playerX + ", " + playerY + ") - Rate: " + line.rate + "- StartX: " + line.startX);
                             mainGame.nextGameState = 3;
-                            playDestroySound();
                         }
                     } else {
                         if (line.startingSide && playerX < line.rate * playerY + line.startX) {
                             Log.d("Spawner.update()", "VERTICAL LEFT LINE - PlayerPosition= (" + playerX + ", " + playerY + ") - Rate: " + line.rate + "- StartX: " + line.startX);
                             mainGame.nextGameState = 3;
-                            playDestroySound();
                         } else if (!line.startingSide && playerX < line.rate * (Globals.GAME_HEIGHT - playerY) + line.startX) {
                             Log.d("Spawner.update()", "VERTICAL RIGHT LINE - PlayerPosition= (" + playerX + ", " + playerY + ") - Rate: " + line.rate + "- StartX: " + line.startX);
                             mainGame.nextGameState = 3;
-                            playDestroySound();
                         }
                     }
                 }
-            } else if (line.state == 4){
+            } else if (line.state == 3){
                 if (mainGame.gameState == 2 && mainGame.nextGameState == 0){
                     mainGame.currentScore += 1;
                 }
-                //mediaPlayer.stop();
-                verticalLines.remove(line);
+                line.state = 0;
             }
         }
     }
 
-    public void playDestroySound(){
-        float playbackSpeed = 1.5f;
-        soundPool.play(soundId1, 0.6f, 0.6f, 0, 0, playbackSpeed);
-
-        if (soundTimer < 96){
-            Log.d(getClass().getSimpleName(), "played destroy sound1");
-            soundPool.play(soundId1, 1, 1, 0, 0, 1);
-            //sound1.start();
-        } else if (soundTimer < 168){
-            Log.d(getClass().getSimpleName(), "played destroy sound2");
-            soundPool.play(soundId1, 1, 1, 0, 0, 1);
-            //sound2.start();
-
-        } else if (soundTimer < 384){
-            Log.d(getClass().getSimpleName(), "played destroy sound3");
-            soundPool.play(soundId1, 1, 1, 0, 0, 1);
-            //sound3.start();
-            soundTimer = 0;
+    public KillerHorizontalLine createHorizontalLine(int playerY){
+        for (KillerHorizontalLine line: horizontalLines){
+            if (line.state == 0){
+                line.resetLine(playerY, rnd);
+                return  line;
+            }
         }
+        Log.d("CreateHorizontalLine", "No inactive(available) lines found. :(");
+        return  null;
     }
+
+    public KillerVerticalLine createVerticalLine(int playerX){
+        for (KillerVerticalLine line: verticalLines){
+            if (line.state == 0){
+                line.resetLine(playerX, rnd);
+                return line;
+            }
+        }
+        Log.d("CreateVerticalLine", "No inactive(available) lines found. :(");
+        return null;
+    }
+
+//    public void playDestroySound(){
+//        float playbackSpeed = 1.5f;
+//        soundPool.play(soundId1, 0.6f, 0.6f, 0, 0, playbackSpeed);
+//
+//        if (soundTimer < 96){
+//            Log.d(getClass().getSimpleName(), "played destroy sound1");
+//            soundPool.play(soundId1, 1, 1, 0, 0, 1);
+//            //sound1.start();
+//        } else if (soundTimer < 168){
+//            Log.d(getClass().getSimpleName(), "played destroy sound2");
+//            soundPool.play(soundId1, 1, 1, 0, 0, 1);
+//            //sound2.start();
+//
+//        } else if (soundTimer < 384){
+//            Log.d(getClass().getSimpleName(), "played destroy sound3");
+//            soundPool.play(soundId1, 1, 1, 0, 0, 1);
+//            //sound3.start();
+//            soundTimer = 0;
+//        }
+//    }
 
     public void draw(Canvas canvas){
         for (KillerHorizontalLine line: horizontalLines){
@@ -170,8 +185,12 @@ public class Spawner {
     }
 
     public void reset(){
-        horizontalLines.clear();
-        verticalLines.clear();
+        for (KillerHorizontalLine line: horizontalLines){
+            line.state = 0;
+        }
+        for (KillerVerticalLine line: verticalLines){
+            line.state = 0;
+        }
         timerReduction = 0;
     }
 }

@@ -25,25 +25,37 @@ public class KillerVerticalLine {
     //startingSide: 0 is bottom, 1 is top --- direction: 0 is leftwards, 1 is rightwards
     boolean startingSide, direction;
 
-    //0 means extending, 1 means exploding, 2 means hasExploded
+    //0 means inactive, 1 means extending, 2 means exploding, 3 means hasExploded
     int state;
 
     public Paint whitePaint = new Paint();
     public Paint redPaint = new Paint();
     public int alphaCounter = 0;
 
-    public KillerVerticalLine (boolean startingSide, boolean direction, float speed, int playerX, SoundPool soundPool, int soundId){
-        this.startingSide = startingSide;
-        this.direction = direction;
+    public KillerVerticalLine (){
+        state = 0;
+
+        whitePaint.setColor(Color.WHITE);
+        whitePaint.setStrokeWidth(6);
+        whitePaint.setStyle(Paint.Style.FILL);
+        redPaint.setColor(Color.RED);
+        redPaint.setStrokeWidth(5);
+        redPaint.setStyle(Paint.Style.FILL);
+    }
+
+    public void resetLine(int playerX, Random rnd){
+        startingSide = rnd.nextBoolean();
+        direction = rnd.nextBoolean();
+        speed = rnd.nextFloat() * 12f;
         if (speed <= 3){
             this.speed = 3;
-        } else {
-            this.speed = speed;
         }
-        state = 0;
 
         startX = playerX + rnd.nextInt(350) - 175;
 
+        if (startX > Globals.GAME_WIDTH){
+            startY = Globals.GAME_WIDTH;
+        }
 
         if (!startingSide){
             startY = Globals.GAME_HEIGHT;
@@ -59,34 +71,24 @@ public class KillerVerticalLine {
             rate = -rnd.nextFloat() * (startX/Globals.GAME_HEIGHT);
         }
 
-//        this.soundPool = soundPool;
-//        //float playbackSpeed = speed/9 + 1/6;
-//        float playbackSpeed = 1.5f;
-//        this.soundPool.play(soundId, 0.6f, 0.6f, 0, 0, playbackSpeed);
+        state = 1;
 
-        whitePaint.setColor(Color.WHITE);
-        whitePaint.setStrokeWidth(6);
-        whitePaint.setStyle(Paint.Style.FILL);
-        redPaint.setColor(Color.RED);
-        redPaint.setStrokeWidth(5);
-        redPaint.setStyle(Paint.Style.FILL);
-        //Log.d("VerticalLine", "Start X: " + startX + " StartY:" + startY);
     }
 
     public void update(){
-        if (state == 0){
+        if (state == 1){
             if (!startingSide){
                 endY -= speed;
                 endX = rate * (Globals.GAME_HEIGHT - endY) + startX;
                 if (endY <= 0){
-                    state = 1;
+                    state = 2;
                     //redPaint.setAlpha(100);
                 }
             } else {
                 endY += speed;
                 endX = rate * endY + startX;
                 if (endY >= Globals.GAME_HEIGHT){
-                    state = 1;
+                    state = 2;
                     //redPaint.setAlpha(100);
                 }
             }
@@ -97,25 +99,24 @@ public class KillerVerticalLine {
     public void draw(Canvas canvas){
 
         switch (state){
-            case 0:
+            case 1:
                 canvas.drawLine(startX, startY, endX, endY, whitePaint);
                 if (direction){
                     canvas.drawLine(startX + 5, startY, endX + 5, endY, redPaint);
                 } else {
                     canvas.drawLine(startX - 5, startY, endX - 5, endY, redPaint);
                 } break;
-            case 1:
-                explodeLine(canvas, redPaint);
-                state = 2;
-                break;
             case 2:
-                alphaCounter += 1;
+                //soundPool.release()
                 explodeLine(canvas, redPaint);
+                alphaCounter += 1;
                 if (alphaCounter >= 10){
-                    state = 4;
+                    state = 3;
                 }
                 break;
-            case 4:
+            case 3:
+                break;
+            case 0:
                 break;
         }
     }

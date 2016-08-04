@@ -28,22 +28,31 @@ public class KillerHorizontalLine {
     //startingSide: 0 is left, 1 is right --- direction: 0 is downwards, 1 is upwards
     boolean startingSide, direction;
 
-    //0 means extending, 1 means exploding, 2 means hasExploded
+    //0 means inactive, 1 means extending, 2 means exploding, 3 means hasExploded
     int state;
 
     public Paint whitePaint = new Paint();
     public Paint redPaint = new Paint();
     public int alphaCounter = 0;
 
-    public KillerHorizontalLine (boolean startingSide, boolean direction, float speed, int playerY, SoundPool soundPool, int soundId){
-        this.startingSide = startingSide;
-        this.direction = direction;
+    public KillerHorizontalLine (){
+        state = 0;
+
+        whitePaint.setColor(Color.WHITE);
+        whitePaint.setStrokeWidth(6);
+        whitePaint.setStyle(Paint.Style.FILL);
+        redPaint.setColor(Color.RED);
+        redPaint.setStrokeWidth(5);
+        redPaint.setStyle(Paint.Style.FILL);
+    }
+
+    public void resetLine(int playerY, Random rnd){
+        startingSide = rnd.nextBoolean();
+        direction = rnd.nextBoolean();
+        speed = rnd.nextFloat() * 12f;
         if (speed <= 3){
             this.speed = 3;
-        } else {
-            this.speed = speed;
         }
-        state = 0;
 
         startY = playerY + rnd.nextInt(400) - 200;
         if (startY > Globals.GAME_HEIGHT){
@@ -64,35 +73,24 @@ public class KillerHorizontalLine {
             rate = -rnd.nextFloat() * (startY/Globals.GAME_WIDTH);
         }
 
-        //this.soundPool = soundPool;
-        //float playbackSpeed = speed/9 + 2/6;
-//        float playbackSpeed = 1.5f;
-//        this.soundPool.play(soundId, 0.6f, 0.6f, 0, 0, playbackSpeed);
-        //this.mediaPlayer = mediaPlayer;
-        //this.mediaPlayer.start();
+        state = 1;
 
-        whitePaint.setColor(Color.WHITE);
-        whitePaint.setStrokeWidth(6);
-        whitePaint.setStyle(Paint.Style.FILL);
-        redPaint.setColor(Color.RED);
-        redPaint.setStrokeWidth(5);
-        redPaint.setStyle(Paint.Style.FILL);
     }
 
     public void update(){
-        if (state == 0){
+        if (state == 1){
             if (!startingSide){
                 endX += speed;
                 endY = rate * endX + startY;
-                if (state < 1 && endX >= Globals.GAME_WIDTH){
-                    state = 1;
+                if (endX >= Globals.GAME_WIDTH){
+                    state = 2;
                     //redPaint.setAlpha(100); TODO: FIGURE OUT HOW TO CHANGE ALPHA WITHOUT TAKING A SHIT ON FPS
                 }
             } else {
                 endX -= speed;
                 endY = rate * (Globals.GAME_WIDTH - endX) + startY;
-                if (state < 1 && endX <= 0){
-                    state = 1;
+                if (endX <= 0){
+                    state = 2;
                     //redPaint.setAlpha(100);
                 }
             }
@@ -102,26 +100,24 @@ public class KillerHorizontalLine {
     public void draw(Canvas canvas){
 
         switch (state){
-            case 0:
+            case 1:
                 canvas.drawLine(startX, startY, endX, endY, whitePaint);
                 if (direction){
                     canvas.drawLine(startX, startY - 5, endX, endY - 5, redPaint);
                 } else {
                     canvas.drawLine(startX, startY + 5, endX, endY + 5, redPaint);
                 } break;
-            case 1:
+            case 2:
                 //soundPool.release();
                 explodeLine(canvas, redPaint);
-                state = 2;
-                break;
-            case 2:
                 alphaCounter += 1;
-                explodeLine(canvas, redPaint);
                 if (alphaCounter >= 10){
-                    state = 4;
+                    state = 3;
                 }
                 break;
-            case 4:
+            case 3:
+                break;
+            case 0:
                 break;
         }
     }
