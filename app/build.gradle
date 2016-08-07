@@ -12,7 +12,7 @@ android {
     compileSdkVersion 23
     buildToolsVersion '23.0.1'
     defaultConfig {
-        applicationId "mightybarbet.swift"
+        applicationId "com.MightyBarbet.LineMayhem"
         minSdkVersion 15
         targetSdkVersion 23
         versionCode 1
@@ -21,6 +21,7 @@ android {
     buildTypes {
         release {
             minifyEnabled true
+            shrinkResources true
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
             signingConfig signingConfigs.config
         }
@@ -31,4 +32,10 @@ dependencies {
     compile fileTree(include: ['*.jar'], dir: 'libs')
     compile 'com.android.support:appcompat-v7:23.4.0'
     compile 'com.google.android.gms:play-services-games:9.2.1'
+    compile 'com.google.android.gms:play-services-ads:9.2.1'
 }
+
+
+
+
+
