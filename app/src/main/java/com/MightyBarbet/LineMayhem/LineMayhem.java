@@ -1,28 +1,20 @@
 package com.MightyBarbet.LineMayhem;
 
 import android.app.Activity;
-import android.graphics.Paint;
 import android.os.Bundle;
-import android.provider.Settings;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.SurfaceView;
-import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
-import android.widget.RelativeLayout;
-import android.widget.RelativeLayout.LayoutParams;
 
 import com.google.android.gms.ads.AdListener;
 import com.google.android.gms.ads.AdRequest;
-import com.google.android.gms.ads.AdSize;
-import com.google.android.gms.ads.AdView;
 import com.google.android.gms.ads.InterstitialAd;
 import com.google.android.gms.common.ConnectionResult;
-import com.google.android.gms.common.GooglePlayServicesNotAvailableException;
 import com.google.android.gms.common.GooglePlayServicesUtil;
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.games.Games;
@@ -77,12 +69,10 @@ public class LineMayhem extends Activity  implements GoogleApiClient.ConnectionC
                         .addConnectionCallbacks(this)
                         .addOnConnectionFailedListener(this)
                         .addApi(Games.API).addScope(Games.SCOPE_GAMES)
-                        // add other APIs and scopes here as needed
                         .build();
             }
 
             gameView = new MainGameScript(this, googleApiClient);
-            //gameView.setLayerType(View.LAYER_TYPE_HARDWARE, null);
         }
 
         // Set the RelativeLayout as the main layout.
@@ -94,7 +84,6 @@ public class LineMayhem extends Activity  implements GoogleApiClient.ConnectionC
         if (interstitialAd.isLoaded()){
             try{
                 interstitialAd.show();
-
             } catch (Exception e){
                 e.printStackTrace();
             }
@@ -105,11 +94,7 @@ public class LineMayhem extends Activity  implements GoogleApiClient.ConnectionC
     }
 
     private void requestNewInterstitial() {
-        AdRequest adRequest = new AdRequest.Builder()
-                //.addTestDevice("A75EB352F6CF0EBC3CBCCE9D4984D643")
-                //.addTestDevice(AdRequest.DEVICE_ID_EMULATOR)
-                .build();
-
+        AdRequest adRequest = new AdRequest.Builder().build();
         interstitialAd.loadAd(adRequest);
     }
 
@@ -126,20 +111,11 @@ public class LineMayhem extends Activity  implements GoogleApiClient.ConnectionC
         // automatically handle clicks on the Home/Up button, so long
         // as you specify a parent activity in AndroidManifest.xml.
         int id = item.getItemId();
-
         //noinspection SimplifiableIfStatement
         if (id == R.id.action_settings) {
             return true;
         }
-
         return super.onOptionsItemSelected(item);
-    }
-
-    @Override
-    protected void onStart() {
-
-        super.onStart();
-
     }
 
     @Override
@@ -151,21 +127,16 @@ public class LineMayhem extends Activity  implements GoogleApiClient.ConnectionC
     }
 
     @Override
-    public void onConnected(@Nullable Bundle bundle) {
-    }
+    public void onConnected(@Nullable Bundle bundle) {}
 
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        //((MainGameScript)gameView).soundPool.release();
         ((MainGameScript)gameView).mediaPlayer.release();
-
     }
 
     @Override
-    public void onConnectionSuspended(int i) {
-
-    }
+    public void onConnectionSuspended(int i) {}
 
     @Override
     public void onConnectionFailed(@NonNull ConnectionResult connectionResult) {
@@ -179,7 +150,6 @@ public class LineMayhem extends Activity  implements GoogleApiClient.ConnectionC
         // Launch the sign-in flow if the button was clicked or if auto sign-in is enabled
         if (mAutoStartSignInFlow) {
             mAutoStartSignInFlow = false;
-            //mSignInClicked = false;
 
             mResolvingConnectionFailure = PlayGamesUtils.resolveConnectionFailure(this,
                     googleApiClient, connectionResult, RC_SIGN_IN,

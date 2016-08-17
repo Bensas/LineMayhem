@@ -73,8 +73,6 @@ public class MainThread extends Thread {
 
     }
 
-
-
     //Set running boolean method
     public void setIsRunning(boolean isRunning) {
         this.isRunning = isRunning;

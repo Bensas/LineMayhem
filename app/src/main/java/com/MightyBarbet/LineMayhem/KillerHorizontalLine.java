@@ -13,13 +13,8 @@ import java.util.Random;
  * Created by Bensas on 01/06/16. (june)
  */
 public class KillerHorizontalLine {
-    Random rnd = new Random();
-    //MediaPlayer mediaPlayer;
-    SoundPool soundPool;
 
-    //startX and startY are assigned at the start and remain static.
-    //endX and endY are modified on every update to make the line extend.
-    float startX, startY, endX, endY;
+    float startX, startY, currentEndX, currentEndY;
     float speed, rate;
 
     long ETA;
@@ -50,7 +45,6 @@ public class KillerHorizontalLine {
 
     //This method resets the attributes of the line to random values. It's used during the game.
     public void resetLine(int playerY, Random rnd){
-        Log.d(getClass().getSimpleName(), "Resetting horizontal line...");
         startingSide = rnd.nextBoolean();
         direction = rnd.nextBoolean();
         speed = rnd.nextFloat() * 11f;
@@ -82,8 +76,8 @@ public class KillerHorizontalLine {
                 endXs[i] = speed * i;
                 endYs[i] = rate * endXs[i] + startY;
             }
-            endX = startX;
-            endY = startY;
+            currentEndX = startX;
+            currentEndY = startY;
         } else {
             startX = Globals.GAME_WIDTH;
             endXs = new float[(int)(Globals.GAME_WIDTH / speed) + 10];
@@ -92,8 +86,8 @@ public class KillerHorizontalLine {
                 endXs[i] = startX - speed * i;
                 endYs[i] = rate * (Globals.GAME_WIDTH - endXs[i]) + startY;
             }
-            endX = startX;
-            endY = startY;
+            currentEndX = startX;
+            currentEndY = startY;
         }
         Log.d(getClass().getCanonicalName(), "Horizontal Line - Rate: " + rate + " - Current time: " + System.nanoTime() + " - ETA: " + ETA);
 
@@ -119,8 +113,8 @@ public class KillerHorizontalLine {
                 endXs[i] = speed * i;
                 endYs[i] = rate * endXs[i] + startY;
             }
-            endX = startX;
-            endY = startY;
+            currentEndX = startX;
+            currentEndY = startY;
         } else {
             this.startY = startY;
             this.startX = Globals.GAME_WIDTH;
@@ -130,8 +124,8 @@ public class KillerHorizontalLine {
                 endXs[i] = startX - speed * i;
                 endYs[i] = rate * (Globals.GAME_WIDTH - endXs[i]) + startY;
             }
-            endX = startX;
-            endY = startY;
+            currentEndX = startX;
+            currentEndY = startY;
         }
         state = 1;
         alphaCounter = 0;
@@ -141,21 +135,21 @@ public class KillerHorizontalLine {
     public void update(){
         if (state == 1){
             if (!startingSide){
-                endY = endYs[updateIndex];
-                endX = endXs[updateIndex];
+                currentEndY = endYs[updateIndex];
+                currentEndX = endXs[updateIndex];
                 //endX += speed;
                 //endY = rate * endX + startY;
-                if (endX >= Globals.GAME_WIDTH){
+                if (currentEndX >= Globals.GAME_WIDTH){
                     Log.d(getClass().getName(), "Horizontal Line - Rate: " + rate + " - Arrival time: " + System.nanoTime());
                     state = 2;
-                    //redPaint.setAlpha(100); TODO: FIGURE OUT HOW TO CHANGE ALPHA WITHOUT TAKING A SHIT ON FPS
+                    //redPaint.setAlpha(100);
                 }
             } else {
-                endY = endYs[updateIndex];
-                endX = endXs[updateIndex];
+                currentEndY = endYs[updateIndex];
+                currentEndX = endXs[updateIndex];
                 //endX -= speed;
                 //endY = rate * (Globals.GAME_WIDTH - endX) + startY;
-                if (endX <= 0){
+                if (currentEndX <= 0){
                     Log.d(getClass().getName(), "Horizontal Line - Rate: " + rate + " - Arrival time: " + System.nanoTime());
 
                     state = 2;
@@ -179,8 +173,6 @@ public class KillerHorizontalLine {
                 } break;
             case 2:
                 //Log.d(getClass().getSimpleName(), "State: 2, rate: " + rate);
-
-                //soundPool.release();
                 explodeLine(canvas, redPaint);
                 state = 3;
                 break;
@@ -192,21 +184,13 @@ public class KillerHorizontalLine {
                     state = 4;
                 }
                 break;
-            case 4:
-                //Log.d(getClass().getSimpleName(), "State: 4, rate: " + rate);
-
-                break;
-            case 0:
-                //Log.d(getClass().getSimpleName(), "State: 0, rate: " + rate);
-
-                break;
         }
     }
 
     public void explodeLine(Canvas canvas, Paint paint){
         Path path = new Path();
         path.moveTo(startX, startY);
-        path.lineTo(endX, endY);
+        path.lineTo(currentEndX, currentEndY);
         if (!startingSide){
             if (direction){
                 path.lineTo(Globals.GAME_WIDTH, 0);

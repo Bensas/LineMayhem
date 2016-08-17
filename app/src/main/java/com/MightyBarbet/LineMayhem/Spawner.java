@@ -19,28 +19,9 @@ public class Spawner {
     ArrayList<KillerHorizontalLine> horizontalLines = new ArrayList<>();
     ArrayList<KillerVerticalLine> verticalLines = new ArrayList<>();
 
-    //SoundPool soundPool;
-    int soundId1, soundId2, soundId3, soundId4;
-    int soundTimer = 0;
-
     int timer = 100, timerReduction = 30; //0= horizontal line, 1= vertical line
 
-    //This line counter is only used on the instructions screen
-    int lineCounter = 0;
-
-    public Spawner (MainGameScript mainGame){
-        soundTimer = 0;
-        //soundPool = new SoundPool(4, AudioManager.STREAM_MUSIC, 0);
-//        soundId1 = soundPool.load(mainGame.getContext(), R.raw.line_effect_3, 1);
-//        soundId2 = soundPool.load(mainGame.getContext(), R.raw.line_explode1, 1);
-//        soundId3 = soundPool.load(mainGame.getContext(), R.raw.line_explode2, 1);
-//        soundId4 = soundPool.load(mainGame.getContext(), R.raw.line_explode3, 1);
-
-    }
-
     public void update(int playerX, int playerY, MainGameScript mainGame){
-        soundTimer += 1;
-        //if (sound1.)
         timer -= 1;
 
         if (mainGame.gameState == 2){
@@ -51,27 +32,25 @@ public class Spawner {
                 } else {
                     checkForCloseVerticalETAs(createVerticalLine(playerX));
                 }
-                //mediaPlayer.start();
 
                 //Each time we reset the timer, we set it lower than before
                 timer = 110 - timerReduction;
                 timerReduction += 3;
 
+                //We limit the timer reduction (This is when the player reached max difficulty)
                 if (timerReduction > 66){
-                    Log.d(getClass().getSimpleName(), "Max difficulty reached!");
+                    //Log.d(getClass().getSimpleName(), "Max difficulty reached!");
                     if (verticalLines.size() == 4){
                         verticalLines.remove(createVerticalLine(playerX));
                     }
                     timerReduction = 66;
                 }
-                Log.d(getClass().getSimpleName(), "Timer reduction: " + timerReduction);
             }
         }
         //We set a specific spawning pattern for the instructions menu
         else if (mainGame.gameState == 4){
             if (mainGame.instructionsAnimationTimer == 130){
                 createVerticalLine(0).resetLineWithCustomAttributes(true, false, 10f, 300, 0, 0.3f);
-
             }
             else if (mainGame.instructionsAnimationTimer == 270){
                 createHorizontalLine(0).resetLineWithCustomAttributes(false, true, 10f, 0, 500, 0.3f);
@@ -81,7 +60,6 @@ public class Spawner {
             }
             else if (mainGame.instructionsAnimationTimer == 500 ){
                 createHorizontalLine(0).resetLineWithCustomAttributes(true, false, 8f, Globals.GAME_WIDTH, 600, -0.3f);
-
             }
         }
 
@@ -160,7 +138,7 @@ public class Spawner {
                 return  line;
             }
         }
-        Log.d("CreateHorizontalLine", "No inactive(available) lines found. :(");
+        //Log.d("CreateHorizontalLine", "No inactive(available) lines found. :(");
         return  null;
     }
 
@@ -172,19 +150,19 @@ public class Spawner {
                 return line;
             }
         }
-        Log.d("CreateVerticalLine", "No inactive(available) lines found. :(");
+        //Log.d("CreateVerticalLine", "No inactive(available) lines found. :(");
         return null;
     }
 
 
-    //We use this method to avoid two lines exploding (roughly) at the same time in a way that
+    //We use this method to avoid two opposite-direction lines exploding (roughly) at the same time in a way that
     //makes it impossible for the player to survive.
     public void checkForCloseHorizontalETAs(KillerHorizontalLine line){
         for (KillerHorizontalLine horizontalLine: horizontalLines){
             if (horizontalLine != line && horizontalLine.direction != line.direction && Math.abs(horizontalLine.ETA - line.ETA) < (long)600000000){
                 line.state = 0;
                 line.rate = 0;
-                Log.d(getClass().getSimpleName(), "CLOSE ETAS DETECTED FOR TWO HORIZONTAL LINES!" + horizontalLine.ETA + " - " + line.ETA + " - Abs value: " + Math.abs(horizontalLine.ETA - line.ETA));
+                //Log.d(getClass().getSimpleName(), "CLOSE ETAs DETECTED FOR TWO HORIZONTAL LINES!" + horizontalLine.ETA + " - " + line.ETA + " - Abs value: " + Math.abs(horizontalLine.ETA - line.ETA));
             }
         }
 
@@ -195,7 +173,7 @@ public class Spawner {
             if (verticalLine != line && verticalLine.direction != line.direction && Math.abs(verticalLine.ETA - line.ETA) < (long)600000000){
                 line.state = 0;
                 line.rate = 0;
-                Log.d(getClass().getSimpleName(), "CLOSE ETAS DETECTED FOR TWO VERTICAL LINES!" + verticalLine.ETA + " - " + line.ETA + " - Abs value: " + Math.abs(verticalLine.ETA - line.ETA));
+                //Log.d(getClass().getSimpleName(), "CLOSE ETAs DETECTED FOR TWO VERTICAL LINES!" + verticalLine.ETA + " - " + line.ETA + " - Abs value: " + Math.abs(verticalLine.ETA - line.ETA));
             }
         }
     }
@@ -212,9 +190,7 @@ public class Spawner {
             line.draw(canvas);
             //Log.d("Spawner.draw()", "Drew line number " + counter + ". Rate: " + line.rate + ". State: " + line.state);
             //counter++;
-
         }
-
     }
 
     public void reset(){

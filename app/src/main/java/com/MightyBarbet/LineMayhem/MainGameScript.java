@@ -25,10 +25,6 @@ import com.google.firebase.analytics.FirebaseAnalytics;
 import java.util.ArrayList;
 import java.util.Random;
 
-//import mightybarbet.swift.unused.Background;
-//import mightybarbet.swift.unused.HostileNPC;
-//import mightybarbet.swift.unused.World;
-
 /**
  * Created by Bensas on 5/5/15. Actually worked on it on 30/05/2016 (may)
  */
@@ -63,7 +59,6 @@ public class MainGameScript extends SurfaceView implements SurfaceHolder.Callbac
     int instructionsAnimationTimer;
     Paint instructionsMenuPaint;
 
-    //Instantiate classes
     private Player player;
     private Boundaries boundaries;
     private Spawner spawner;
@@ -73,10 +68,6 @@ public class MainGameScript extends SurfaceView implements SurfaceHolder.Callbac
 
     //GameState variable: 1 = main menu, 2 = in game, 3 = end game screen, 4 = instructions page 1, 5= instructions page 2;
     public int gameState = 1, nextGameState = 0, gameStateTimer = Globals.GAME_HEIGHT + 200;
-
-    //Create options object for loading of bitmaps
-    //private BitmapFactory.Options bitmapOptions = new BitmapFactory.Options();
-
 
     //MainScript constructor
     public MainGameScript(LineMayhem context, GoogleApiClient googleApiClient){
@@ -100,11 +91,6 @@ public class MainGameScript extends SurfaceView implements SurfaceHolder.Callbac
 
         mediaPlayer = MediaPlayer.create(context, R.raw.music);
         mediaPlayer.setLooping(true);
-        //soundPool = new SoundPool(4, AudioManager.STREAM_MUSIC, 0);
-        //musicId = soundPool.load(getContext(), R.raw.music4, 1);
-        //soundPool.setLoop(musicId, -1);
-
-        //mediaPlayer.setLooping(true);
     }
 
     //Surface methods
@@ -119,14 +105,11 @@ public class MainGameScript extends SurfaceView implements SurfaceHolder.Callbac
             scaleFactorX = getWidth()/(Globals.GAME_WIDTH * 1.0f);
             scaleFactorY = getHeight() / (Globals.GAME_HEIGHT * 1.0f);
 
-            //mainMenuElements.add(new TextLogo(Globals.GAME_WIDTH/2, 250, 150, "Line", Paint.Align.CENTER, true, 0, getContext()));
-            //mainMenuElements.add(new TextLogo(Globals.GAME_WIDTH/2, 400, 140, "MayheM", Paint.Align.CENTER, true, 0, getContext()));
 
             mainMenuElements.add(new TextButton(Globals.GAME_WIDTH/2, 600, 50, getResources().getString(R.string.button_play), Paint.Align.CENTER, true, 2, getContext()));
             mainMenuElements.add(new TextButton(Globals.GAME_WIDTH/2, 800, 50, getResources().getString(R.string.button_instructions), Paint.Align.CENTER, true, 4, getContext()));
             mainMenuElements.add(new TextButton(Globals.GAME_WIDTH/2, 1000, 50, getResources().getString(R.string.button_highscores), Paint.Align.CENTER, true, 0, getContext()));
             mainMenuElements.add(new TextButton(Globals.GAME_WIDTH/2, 1150, 30, getResources().getString(R.string.button_music), Paint.Align.CENTER, true, 0, getContext()));
-
 
             instructionsMenuElements.add(new TextButton(Globals.GAME_WIDTH/2, 100, 60, getResources().getString(R.string.button_instructions) + ":", Paint.Align.CENTER, false, 0, getContext()));
             instructionsMenuElements.add(new TextButton(Globals.GAME_WIDTH/2, 250, 32, getResources().getString(R.string.text_instructions1), Paint.Align.CENTER, false, 0, getContext()));
@@ -134,7 +117,6 @@ public class MainGameScript extends SurfaceView implements SurfaceHolder.Callbac
             instructionsMenuElements.add(new TextButton(Globals.GAME_WIDTH/2, 950, 32, getResources().getString(R.string.text_instructions2), Paint.Align.CENTER, false, 0, getContext()));
             instructionsMenuElements.add(new TextButton(Globals.GAME_WIDTH/2, 1000, 35, getResources().getString(R.string.text_instructions3), Paint.Align.CENTER, false, 0, getContext()));
             instructionsMenuElements.add(new TextButton(Globals.GAME_WIDTH/2, 1150, 60, getResources().getString(R.string.button_play), Paint.Align.CENTER, true, 2, getContext()));
-
             instructionsMenuPaint = new Paint();
             instructionsMenuPaint.setColor(Color.WHITE);
             instructionsMenuPaint.setStyle(Paint.Style.FILL);
@@ -150,16 +132,13 @@ public class MainGameScript extends SurfaceView implements SurfaceHolder.Callbac
 
             score = new TextButton(Globals.BOUNDARY_WIDTH + 10, Globals.BOUNDARY_WIDTH + 40, 35, "Score: " + currentScore, Paint.Align.LEFT, false, 0, context);
 
-            //Modify BitmapFactory option to prevent auto scaling of bitmaps
-            //bitmapOptions.inScaled = false;
-
             //Instantiate player and background
             player = new Player(getContext());
 
             //Create boundaries
             boundaries = new Boundaries();
 
-            spawner = new Spawner(this);
+            spawner = new Spawner();
         }
         if (gameState == 2){
             if (!mediaPlayer.isPlaying()){
@@ -179,14 +158,14 @@ public class MainGameScript extends SurfaceView implements SurfaceHolder.Callbac
 
     @Override
     public void surfaceDestroyed(SurfaceHolder holder){
-        int counter = 0;
-        boolean retry = true;
-        //soundPool.pause(musicId);
         if (mediaPlayer.isPlaying()){
             mediaPlayer.pause();
         } else {
 
         }
+
+        int counter = 0;
+        boolean retry = true;
         while(retry && counter < 1000){
             counter++;
             try{
@@ -196,7 +175,7 @@ public class MainGameScript extends SurfaceView implements SurfaceHolder.Callbac
 
             }catch(InterruptedException e){e.printStackTrace();}
         }
-        System.out.println(thread.getState());
+        Log.d(getClass().getSimpleName(), "Thread " + thread.getState());
     }
 
 
@@ -328,43 +307,8 @@ public class MainGameScript extends SurfaceView implements SurfaceHolder.Callbac
         }
     }
 
-    //I tried putting the actions to be executed inside the case statement in the onTouchEvent method inside their own methods for tidiness' sake,
-    //but for whatever reason they were not being called correctly. I encourage you to try and fix them.
-//    public boolean onTouchMainMenu(MotionEvent event){
-//        if (event.getAction() == MotionEvent.ACTION_UP){
-//            //if ()
-//        }
-//        return true;
-//    }
-//    public boolean onTouchInGame(MotionEvent event){
-//        Log.d("onTouchInGame", "onTouchInGame called!" );
-//        //When the finger is touching the screen
-//        if (event.getAction() == MotionEvent.ACTION_DOWN){
-//            swipeStartX = event.getX();
-//            swipeStartY = event.getY();
-//            return super.onTouchEvent(event);
-//        }
-//        else if (event.getAction() == MotionEvent.ACTION_UP){
-//            Log.d("onTouchInGame", "actionUp!" );
-//            swipeDeltaX = event.getX() - swipeStartX;
-//            swipeDeltaY = event.getY() - swipeStartY;
-//            swipeDeltaTime = (event.getEventTime() - event.getDownTime()) * 0.01f;
-//            //Log.d("Swipe duration:", String.valueOf(swipeDeltaTime) + " - " + String.valueOf(swipeStartTime)
-//            //        + " - " + String.valueOf(swipeDeltaTime - swipeStartTime));
-//
-//            player.movePlayer(swipeDeltaX/swipeDeltaTime, swipeDeltaY/swipeDeltaTime);
-//
-//            return super.onTouchEvent(event);
-//        } else {
-//            Log.d("onTouchInGame", "Touch returned false. This is weird and I don't think is possible. But hey, if you're reading this, then who's to say what's possible or not? :^)");
-//            return super.onTouchEvent(event);
-//        }
-//
-//    }
-
     //Makes the placer bounce off walls.
     public void checkBoundariesCollisions(){
-
         //Undecent, unpretty, hardcoded code
         if ((player.x - player.width/2) < Globals.BOUNDARY_WIDTH){
             player.x = Globals.BOUNDARY_WIDTH + player.width/2;
@@ -383,7 +327,6 @@ public class MainGameScript extends SurfaceView implements SurfaceHolder.Callbac
 
     //Update function
     public void update(){
-
         switch (gameState){
             case 1:
                 break;
@@ -399,80 +342,50 @@ public class MainGameScript extends SurfaceView implements SurfaceHolder.Callbac
                 spawner.update(player.x, player.y, this);
                 player.update();
 
-                //This is....animation...looks good, innit?
+                //This....animation code...is good, innit?
                 if (instructionsAnimationTimer < 170){
                     player.x = Globals.GAME_WIDTH/2;
                     player.y = Globals.GAME_HEIGHT/2;
                 }
                 else if  (instructionsAnimationTimer < 200){
                     player.movePlayer(2.5f, -0.7f);
-                }
-                else if (instructionsAnimationTimer < 280){
-
-                }
+                } else if (instructionsAnimationTimer < 280){}
                 else if (instructionsAnimationTimer < 320){
                     player.movePlayer(-1f, 2f);
-                }
-                else if (instructionsAnimationTimer < 420){
-
-                }
+                } else if (instructionsAnimationTimer < 420){}
                 else if (instructionsAnimationTimer < 460){
                     player.movePlayer(-1.5f, -0.5f);
-                }
-                else if (instructionsAnimationTimer < 510){
-
-                }
+                } else if (instructionsAnimationTimer < 510){}
                 else if (instructionsAnimationTimer < 540){
                     player.movePlayer(-0.5f, -2.7f);
-                }
-                else if (instructionsAnimationTimer < 600){
-
-                }
+                } else if (instructionsAnimationTimer < 600){}
                 else if (instructionsAnimationTimer < 630){
                     player.movePlayer(3.46f, 3.5f);
-                }
-                else if (instructionsAnimationTimer < 660){
-
-                }
+                } else if (instructionsAnimationTimer < 660){}
                 else {
                     player.x = Globals.GAME_WIDTH /2;
                     player.y = Globals.GAME_HEIGHT / 2;
                     instructionsAnimationTimer = 0;
                 }
-
                 instructionsAnimationTimer++;
 
         }
-
-
         handleGameStateChanges();
     }
 
     //Custom behaviour for different state changes is coded here. Uses the
     public void handleGameStateChanges(){
-
         switch (nextGameState){
-
             //This happens if there is no pending gameState change.
             case 0:
                 break;
-
             //This happens when the play button is pressed
             case 2:
-                //if (soundPool.)
-                //soundPool.play(musicId, 1, 1, 0, -1, 1);
-
-//                try{
-//                    mediaPlayer.prepare();
-//                } catch (IOException e){
-//                    e.printStackTrace();
-//                }
                 if (musicOn){
                     mediaPlayer.seekTo(0);
                     mediaPlayer.setVolume(1, 1);
                     mediaPlayer.start();
                 }
-
                 resetGame();
                 gameState = 2;
                 nextGameState = 0;
@@ -482,9 +395,7 @@ public class MainGameScript extends SurfaceView implements SurfaceHolder.Callbac
             case 3:
                 fadeoutCounter++;
 
-                //soundPool.setVolume(musicId, 1 - 0.1f*fadeoutCounter, 1 - 0.1f*fadeoutCounter);
                 mediaPlayer.setVolume(1 - 0.1f*fadeoutCounter, 1 - 0.1f*fadeoutCounter);
-                //soundPool.stop(musicId);
 
                 player.radius += fadeoutCounter * 15;
                 player.paint.setAlpha(255-fadeoutCounter*50);
@@ -493,11 +404,11 @@ public class MainGameScript extends SurfaceView implements SurfaceHolder.Callbac
                     element.y = element.defaultY + gameStateTimer;
                 }
                 gameStateTimer *= 0.7;
+
                 if (gameStateTimer <= 1){
                     gameState = 3;
                     nextGameState = 0;
 
-                    //soundPool.stop(musicId);
                     mediaPlayer.setVolume(0, 0);
                     mediaPlayer.pause();
 
@@ -517,7 +428,6 @@ public class MainGameScript extends SurfaceView implements SurfaceHolder.Callbac
                         interstitialAdCounter = 0;
                         Log.d(getClass().getSimpleName(), "InterstitialAdCounter reset");
                     }
-
 
                     gameStateTimer = Globals.GAME_HEIGHT + 200;
 
@@ -583,19 +493,6 @@ public class MainGameScript extends SurfaceView implements SurfaceHolder.Callbac
                 }
 
                 for (TextButton button: mainMenuElements){
-                    if (button.getClass() == TextLogo.class){
-                        if (logoBounceTimer < 30){
-                            button.isPressed = 0;
-                        } else if (logoBounceTimer < 40){
-                            button.isPressed = 1;
-                        } else if (logoBounceTimer < 70){
-                            button.isPressed = 2;
-                        } else if (logoBounceTimer < 90){
-                            button.isPressed = 1;
-                        } else{
-                            logoBounceTimer = 0;
-                        }
-                    }
                     button.draw(canvas);
                 }
                 break;
@@ -633,11 +530,12 @@ public class MainGameScript extends SurfaceView implements SurfaceHolder.Callbac
 
         }
 
-        //The game frame (game boundaries) are always drawn
+        //The game frame (game boundaries) is (are) always drawn
         boundaries.draw(canvas);
 
         canvas.restoreToCount(savedCanvasState);
 
+        //I'm not sure is this is crucial, but it should be tested on Jellybean devices, that's where it might break if
         invalidate();
 
     }

@@ -13,20 +13,14 @@ import java.util.Random;
  * Created by Bensas on 02/06/16. (june)
  */
 public class KillerVerticalLine {
-    SoundPool soundPool;
 
-    //startX and startY are assigned at the start and remain static.
-    //endX and endY are modified on every update to make the line extend.
-    float startX, startY, endX, endY;
+    float startX, startY, currentEndX, currentEndY;
     float[] endXs, endYs;
     float speed, rate;
 
     long ETA;
 
     int updateIndex;
-
-    //debugging variables
-    float finalX, finalY;
 
     //startingSide: 0 is bottom, 1 is top --- direction: 0 is leftwards, 1 is rightwards
     boolean startingSide, direction;
@@ -85,8 +79,8 @@ public class KillerVerticalLine {
                 endYs[i] = startY - speed * i;
                 endXs[i] = rate * (Globals.GAME_HEIGHT - endYs[i]) + startX;
             }
-            endY = startY;
-            endX = startX;
+            currentEndY = startY;
+            currentEndX = startX;
         } else {
             startY = 0;
             endYs = new float[(int)(Globals.GAME_HEIGHT / speed)+10];
@@ -95,8 +89,8 @@ public class KillerVerticalLine {
                 endYs[i] = speed * i;
                 endXs[i] = rate * endYs[i] + startX;
             }
-            endY = startY;
-            endX = startX;
+            currentEndY = startY;
+            currentEndX = startX;
         }
 
         Log.d(getClass().getCanonicalName(), "Vertical Line - Rate: " + rate + " - Current time: " + System.nanoTime() + " - ETA: " + ETA);
@@ -122,8 +116,8 @@ public class KillerVerticalLine {
                 endYs[i] = startY - speed * i;
                 endXs[i] = rate * (Globals.GAME_HEIGHT - endYs[i]) + startX;
             }
-            endY = startY;
-            endX = startX;
+            currentEndY = startY;
+            currentEndX = startX;
         } else {
             this.startX = startX;
             this.startY = 0;
@@ -133,8 +127,8 @@ public class KillerVerticalLine {
                 endYs[i] = speed * i;
                 endXs[i] = rate * endYs[i] + startX;
             }
-            endY = startY;
-            endX = startX;
+            currentEndY = startY;
+            currentEndX = startX;
         }
 
         state = 1;
@@ -145,19 +139,19 @@ public class KillerVerticalLine {
     public void update(){
         if (state == 1){
             if (!startingSide){
-                endY = endYs[updateIndex];
-                endX = endXs[updateIndex];
+                currentEndY = endYs[updateIndex];
+                currentEndX = endXs[updateIndex];
                 //endX = rate * (Globals.GAME_HEIGHT - endY) + startX;
-                if (endY <= 0){
+                if (currentEndY <= 0){
                     Log.d(getClass().getName(), "Vertical Line - Rate: " + rate + " - Arrival time: " + System.nanoTime());
                     state = 2;
                     //redPaint.setAlpha(100);
                 }
             } else {
-                endY = endYs[updateIndex];
-                endX = endXs[updateIndex];
+                currentEndY = endYs[updateIndex];
+                currentEndX = endXs[updateIndex];
                 //endX = rate * endY + startX;
-                if (endY >= Globals.GAME_HEIGHT){
+                if (currentEndY >= Globals.GAME_HEIGHT){
                     Log.d(getClass().getName(), "Vertical Line - Rate: " + rate + " - Arrival time: " + System.nanoTime());
                     state = 2;
                     //redPaint.setAlpha(100);
@@ -172,17 +166,14 @@ public class KillerVerticalLine {
         switch (state){
             case 1:
                 //Log.d(getClass().getSimpleName(), "Drawing lnine, rate: " + rate);
-                canvas.drawLine(startX, startY, endX, endY, whitePaint);
+                canvas.drawLine(startX, startY, currentEndX, currentEndY, whitePaint);
                 if (direction){
-                    canvas.drawLine(startX + 5, startY, endX + 5, endY, redPaint);
+                    canvas.drawLine(startX + 5, startY, currentEndX + 5, currentEndY, redPaint);
                 } else {
-                    canvas.drawLine(startX - 5, startY, endX - 5, endY, redPaint);
+                    canvas.drawLine(startX - 5, startY, currentEndX - 5, currentEndY, redPaint);
                 } break;
             case 2:
                 //Log.d(getClass().getSimpleName(), "State: 2, rate: " + rate);
-
-
-                //soundPool.release()
                 explodeLine(canvas, redPaint);
                 state = 3;
                 break;
@@ -194,20 +185,13 @@ public class KillerVerticalLine {
                     state = 4;
                 }
                 break;
-            case 4:
-                //Log.d(getClass().getSimpleName(), "State: 4, rate: " + rate);
-                break;
-            case 0:
-                //Log.d(getClass().getSimpleName(), "State: 0, rate: " + rate);
-
-                break;
         }
     }
 
     public void explodeLine(Canvas canvas, Paint whitePaint){
         Path path = new Path();
         path.moveTo(startX, startY);
-        path.lineTo(endX, endY);
+        path.lineTo(currentEndX, currentEndY);
         if (!startingSide){
             if (direction){
                 path.lineTo(Globals.GAME_WIDTH, 0);

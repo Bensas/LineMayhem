@@ -12,10 +12,9 @@ import android.util.Log;
  * Created by Bensas on 5/5/15. Actually used on 01/06/2016 (june)
  */
 public class Player extends GameObject{
-    //Attributes
+
     Paint paint = new Paint();
     public int radius = 10;
-    //public int transparency;
     public Bitmap skinArrow;
 
     //Variables used for movement
@@ -34,7 +33,7 @@ public class Player extends GameObject{
         height = 2 * radius;
     }
 
-    //MovePlayer method takes swypeDelta values from the main script and modifies the acceleration based on it.
+    //MovePlayer method takes swypeDelta values from the main script and modifies the speed based on it.
     public void movePlayer(float deltaX, float deltaY){
         speedX += deltaX * speedFactor;
         speedY += deltaY * speedFactor;
@@ -54,20 +53,16 @@ public class Player extends GameObject{
             speedY = 0;
         }
 
-
         x += speedX;
         y += speedY;
 
         radius = (int)(10 + (Math.abs(speedX) + Math.abs(speedY))/40);
-
-        //System.out.println(x + " " + y);
-
+        //System.out.println(x + " - " + y);
     }
 
     //Draw method
     public void draw(Canvas canvas){
         //canvas.drawBitmap(skinArrow, x-skinArrow.getWidth()/2, y-skinArrow.getHeight()/2, paint);
-        //paint.setAlpha(255 - transparency);
         canvas.drawCircle(x, y, radius, paint);
     }
 
