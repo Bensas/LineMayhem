@@ -10,11 +10,14 @@
     <string name="button_play">Play</string>
     <string name="button_instructions">Instructions</string>
     <string name="button_highscores">Highscores</string>
+    <string name="button_music">Music: ON</string>
+
     <string name="button_next">Next</string>
     <string name="button_previous">Previous</string>
 
 
-    <string name="text_instructions1">Swipe on the screen to move!</string>
+    <string name="text_instructions1">Use short swipes on the</string>
+    <string name="text_instructions12">screen to move!</string>
     <string name="text_instructions2">Stay on the white side of the</string>
     <string name="text_instructions3">lines or you\'ll die!</string>
 

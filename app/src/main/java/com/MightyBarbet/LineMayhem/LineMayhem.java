@@ -3,6 +3,7 @@ package com.MightyBarbet.LineMayhem;
 import android.app.Activity;
 import android.graphics.Paint;
 import android.os.Bundle;
+import android.provider.Settings;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.util.Log;
@@ -21,8 +22,11 @@ import com.google.android.gms.ads.AdSize;
 import com.google.android.gms.ads.AdView;
 import com.google.android.gms.ads.InterstitialAd;
 import com.google.android.gms.common.ConnectionResult;
+import com.google.android.gms.common.GooglePlayServicesNotAvailableException;
+import com.google.android.gms.common.GooglePlayServicesUtil;
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.games.Games;
+import com.google.firebase.analytics.FirebaseAnalytics;
 
 
 public class LineMayhem extends Activity  implements GoogleApiClient.ConnectionCallbacks,
@@ -35,13 +39,17 @@ public class LineMayhem extends Activity  implements GoogleApiClient.ConnectionC
     private boolean mAutoStartSignInFlow = true;
     private int RC_SIGN_IN = 9001;
 
-    private AdView adView;
-
+    public FirebaseAnalytics firebaseClient;
     public InterstitialAd interstitialAd;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        try{
+            firebaseClient = FirebaseAnalytics.getInstance(this);
+        } catch (Exception e){
+            e.printStackTrace();
+        }
 
         //Turn tittle off
         getWindow().requestFeature(Window.FEATURE_NO_TITLE);
@@ -50,37 +58,31 @@ public class LineMayhem extends Activity  implements GoogleApiClient.ConnectionC
         getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN);
 
         if (gameView == null){
-            // Create the Google Api Client with access to the Play Games services
-            googleApiClient = new GoogleApiClient.Builder(this)
-                    .addConnectionCallbacks(this)
-                    .addOnConnectionFailedListener(this)
-                    .addApi(Games.API).addScope(Games.SCOPE_GAMES)
-                    // add other APIs and scopes here as needed
-                    .build();
 
-            interstitialAd = new InterstitialAd(this);
-            interstitialAd.setAdUnitId("ca-app-pub-2704022189582580/5935884551");
-            interstitialAd.setAdListener(new AdListener() {
-                @Override
-                public void onAdClosed() {
-                    requestNewInterstitial();
-                }
+            if (GooglePlayServicesUtil.isGooglePlayServicesAvailable(this) == ConnectionResult.SUCCESS ||
+                    GooglePlayServicesUtil.isGooglePlayServicesAvailable(this) == ConnectionResult.SIGN_IN_REQUIRED){
+                interstitialAd = new InterstitialAd(this);
+                interstitialAd.setAdUnitId("ca-app-pub-2704022189582580/5935884551");
+                interstitialAd.setAdListener(new AdListener() {
+                    @Override
+                    public void onAdClosed() {
+                        requestNewInterstitial();
+                    }
 
-//                @Override
-//                public void onAdOpened() {
-//                    //interstitialAd.
-//                }
-//
-//                @Override
-//                public void onAdLoaded() {
-//                    showInterstitialAd();
-//                }
-            });
+                });
+                requestNewInterstitial();
 
-            requestNewInterstitial();
+                // Create the Google Api Client with access to the Play Games services
+                googleApiClient = new GoogleApiClient.Builder(this)
+                        .addConnectionCallbacks(this)
+                        .addOnConnectionFailedListener(this)
+                        .addApi(Games.API).addScope(Games.SCOPE_GAMES)
+                        // add other APIs and scopes here as needed
+                        .build();
+            }
 
             gameView = new MainGameScript(this, googleApiClient);
-            gameView.setLayerType(View.LAYER_TYPE_HARDWARE, null);
+            //gameView.setLayerType(View.LAYER_TYPE_HARDWARE, null);
         }
 
         // Set the RelativeLayout as the main layout.
@@ -135,6 +137,7 @@ public class LineMayhem extends Activity  implements GoogleApiClient.ConnectionC
 
     @Override
     protected void onStart() {
+
         super.onStart();
 
     }
@@ -142,13 +145,21 @@ public class LineMayhem extends Activity  implements GoogleApiClient.ConnectionC
     @Override
     protected void onStop() {
         super.onStop();
-        if (googleApiClient.isConnected()){
+        if (googleApiClient != null && googleApiClient.isConnected()){
             googleApiClient.disconnect();
         }
     }
 
     @Override
     public void onConnected(@Nullable Bundle bundle) {
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        //((MainGameScript)gameView).soundPool.release();
+        ((MainGameScript)gameView).mediaPlayer.release();
+
     }
 
     @Override

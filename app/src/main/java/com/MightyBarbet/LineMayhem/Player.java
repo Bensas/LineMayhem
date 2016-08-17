@@ -15,11 +15,11 @@ public class Player extends GameObject{
     //Attributes
     Paint paint = new Paint();
     public int radius = 10;
+    //public int transparency;
     public Bitmap skinArrow;
 
     //Variables used for movement
-    private double speedFactor = 0.3;
-    private float slowDownFactorX, slowDownFactorY;
+    private double speedFactor = 0.33;
 
     //Constructor
     public Player(Context context){
@@ -43,102 +43,22 @@ public class Player extends GameObject{
     //Update method
     public void update(){
 
-        //The below code would ideally be replaced by
         speedX *= 0.9;
         speedY *= 0.9;
-        //Unfortunately, processors suck at math and FPS tank hard with those lines of code.
-        Log.d(getClass().getSimpleName(), speedX + " - " + speedY);
-//        if (speedX > 0){
-//            if (speedX < 0.1){
-//                speedX = 0;
-//            }
-//            else if (speedX < 1){
-//                speedX -= 0.08 ;
-//            }
-//            else if (speedX < 5){
-//                speedX -= 0.1;
-//            }
-//            else if (speedX < 10){
-//                speedX -= 1;
-//            }
-//            else {
-//                speedY -= 2;
-//            }
-//        }
-//        else if (speedX < 0){
-//            if (speedX > -0.1){
-//                speedX = 0;
-//            }
-//            else if (speedX > -1){
-//                speedX += 0.08 ;
-//            }
-//            else if (speedX > -5){
-//                speedX += 0.1;
-//            }
-//            else if (speedX > -10){
-//                speedX += 1;
-//            }
-//            else {
-//                speedY += 2;
-//            }
-//        }
-//        if (speedY > 0){
-//            if (speedY < 0.1){
-//                speedY = 0;
-//            }
-//            else if (speedY < 1){
-//                speedY -= 0.08 ;
-//            }
-//            else if (speedY < 5){
-//                speedY -= 0.5;
-//            }
-//            else if (speedY < 10){
-//                speedY -= 1;
-//            }
-//            else {
-//                speedY -= 2;
-//            }
-//        }
-//        else if (speedY < 0){
-//            if (speedY > -0.1){
-//                speedY = 0;
-//            }
-//            else if (speedY > -1){
-//                speedY += 0.08 ;
-//            }
-//            else if (speedY > -5){
-//                speedY += 0.5;
-//            }
-//            else if (speedY > -10){
-//                speedY += 1;
-//            }
-//            else {
-//                speedY += 2;
-//            }
-//        }
-
-
-//        if (speedY > 0.1){
-//            speedY -= 0.09 ;
-//        } else if (speedY < -0.1){
-//            speedY += 0.09 ;
-//        }
 
         //If speed/acceleration are smaller than 0.1, round them down to 0
         if (Math.abs(speedX) < 0.1){
             speedX = 0;
-            accelX = 0.02;
         }
         if (Math.abs(speedY) < 0.1){
             speedY = 0;
-            accelX = 0.02;
         }
 
 
         x += speedX;
         y += speedY;
 
-        radius = (int)(10 + (Math.abs(speedX) + Math.abs(speedY))/5);
+        radius = (int)(10 + (Math.abs(speedX) + Math.abs(speedY))/40);
 
         //System.out.println(x + " " + y);
 
@@ -147,7 +67,8 @@ public class Player extends GameObject{
     //Draw method
     public void draw(Canvas canvas){
         //canvas.drawBitmap(skinArrow, x-skinArrow.getWidth()/2, y-skinArrow.getHeight()/2, paint);
-        canvas.drawCircle(x, y, 10, paint);
+        //paint.setAlpha(255 - transparency);
+        canvas.drawCircle(x, y, radius, paint);
     }
 
     public void reset(){

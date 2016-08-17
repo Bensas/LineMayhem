@@ -5,6 +5,7 @@ import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Path;
 import android.media.SoundPool;
+import android.util.Log;
 
 import java.util.Random;
 
@@ -19,6 +20,8 @@ public class KillerVerticalLine {
     float startX, startY, endX, endY;
     float[] endXs, endYs;
     float speed, rate;
+
+    long ETA;
 
     int updateIndex;
 
@@ -58,12 +61,20 @@ public class KillerVerticalLine {
             this.speed = 8;
         }
 
-        startX = playerX + rnd.nextInt(350) - 175;
+        ETA = System.nanoTime() + (long)((long)(1000000000/60) * (Globals.GAME_HEIGHT / speed));
 
+        startX = playerX + rnd.nextInt(350) - 175;
+        if (startX < Globals.BOUNDARY_WIDTH){
+            startX = Globals.BOUNDARY_WIDTH;
+        } else if (startX > Globals.GAME_WIDTH - Globals.BOUNDARY_WIDTH){
+            startX = Globals.GAME_WIDTH - Globals.BOUNDARY_WIDTH;
+        }
+
+        float randomFloat = rnd.nextFloat();
         if (startX <= playerX){
-            rate = rnd.nextFloat() * ((Globals.GAME_WIDTH - startX) / Globals.GAME_HEIGHT);
+            rate = randomFloat>0.1f?randomFloat * ((Globals.GAME_WIDTH - startX) / Globals.GAME_HEIGHT): 0.1f * ((Globals.GAME_WIDTH - startX) / Globals.GAME_HEIGHT);
         } else {
-            rate = -rnd.nextFloat() * (startX/Globals.GAME_HEIGHT);
+            rate = randomFloat>0.1f? -randomFloat*(startX/Globals.GAME_HEIGHT) : -0.1f*(startX/Globals.GAME_HEIGHT);
         }
 
         if (!startingSide){
@@ -87,6 +98,8 @@ public class KillerVerticalLine {
             endY = startY;
             endX = startX;
         }
+
+        Log.d(getClass().getCanonicalName(), "Vertical Line - Rate: " + rate + " - Current time: " + System.nanoTime() + " - ETA: " + ETA);
 
         state = 1;
         alphaCounter = 0;
@@ -136,6 +149,7 @@ public class KillerVerticalLine {
                 endX = endXs[updateIndex];
                 //endX = rate * (Globals.GAME_HEIGHT - endY) + startX;
                 if (endY <= 0){
+                    Log.d(getClass().getName(), "Vertical Line - Rate: " + rate + " - Arrival time: " + System.nanoTime());
                     state = 2;
                     //redPaint.setAlpha(100);
                 }
@@ -144,6 +158,7 @@ public class KillerVerticalLine {
                 endX = endXs[updateIndex];
                 //endX = rate * endY + startX;
                 if (endY >= Globals.GAME_HEIGHT){
+                    Log.d(getClass().getName(), "Vertical Line - Rate: " + rate + " - Arrival time: " + System.nanoTime());
                     state = 2;
                     //redPaint.setAlpha(100);
                 }

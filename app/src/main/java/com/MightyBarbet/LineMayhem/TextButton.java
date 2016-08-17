@@ -67,5 +67,8 @@ public class TextButton {
 
     public void setText(String newText){
         text = newText;
+        boundaries = new Rect();
+        paint.getTextBounds(text, 0, text.length(), boundaries);
+        boundaries = new Rect(x - boundaries.width()/2, y - boundaries.height(), x + boundaries.width()/2, y);
     }
 }

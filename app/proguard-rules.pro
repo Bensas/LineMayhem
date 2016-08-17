@@ -15,3 +15,20 @@
 #-keepclassmembers class fqcn.of.javascript.interface.for.webview {
 #   public *;
 #}
+-keep public class com.google.android.gms.ads.** {
+    public *;
+}
+
+-keep public class com.google.ads.** {
+    public *;
+}
+
+-keep public class com.google.android.gms.games.** {
+    public *;
+}
+
+-keep public class com.google.games.** {
+    public *;
+}
+
+-dontwarn com.google.android.gms.**

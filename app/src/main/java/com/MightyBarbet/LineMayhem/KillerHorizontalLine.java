@@ -22,6 +22,8 @@ public class KillerHorizontalLine {
     float startX, startY, endX, endY;
     float speed, rate;
 
+    long ETA;
+
     float[] endXs, endYs;
     int updateIndex;
 
@@ -52,19 +54,24 @@ public class KillerHorizontalLine {
         startingSide = rnd.nextBoolean();
         direction = rnd.nextBoolean();
         speed = rnd.nextFloat() * 11f;
-        if (speed <= 4){
-            this.speed = 4;
+
+        if (speed <= 3.5f){
+            this.speed = 3.5f;
         }
+        ETA = System.nanoTime() + (long)((long)(1000000000/60) * (Globals.GAME_WIDTH / speed));
 
         startY = playerY + rnd.nextInt(400) - 200;
-        if (startY > Globals.GAME_HEIGHT){
-            startY = Globals.GAME_HEIGHT;
+        if (startY > Globals.GAME_HEIGHT - Globals.BOUNDARY_WIDTH){
+            startY = Globals.GAME_HEIGHT - Globals.BOUNDARY_WIDTH;
+        } else if (startY < Globals.BOUNDARY_WIDTH){
+            startY = Globals.BOUNDARY_WIDTH;
         }
 
+        float randomFloat = rnd.nextFloat();
         if (startY <= playerY){
-            rate = rnd.nextFloat() * ((Globals.GAME_HEIGHT - startY) / Globals.GAME_WIDTH);
+            rate = randomFloat>0.1f?randomFloat * ((Globals.GAME_HEIGHT - startY) / Globals.GAME_WIDTH) : 0.1f * ((Globals.GAME_HEIGHT - startY) / Globals.GAME_WIDTH);
         } else {
-            rate = -rnd.nextFloat() * (startY/Globals.GAME_WIDTH);
+            rate = randomFloat>0.3f?-randomFloat * (startY/Globals.GAME_WIDTH) : -0.1f * (startY/Globals.GAME_WIDTH);
         }
 
         if (!startingSide){
@@ -88,6 +95,7 @@ public class KillerHorizontalLine {
             endX = startX;
             endY = startY;
         }
+        Log.d(getClass().getCanonicalName(), "Horizontal Line - Rate: " + rate + " - Current time: " + System.nanoTime() + " - ETA: " + ETA);
 
 
         state = 1;
@@ -138,6 +146,7 @@ public class KillerHorizontalLine {
                 //endX += speed;
                 //endY = rate * endX + startY;
                 if (endX >= Globals.GAME_WIDTH){
+                    Log.d(getClass().getName(), "Horizontal Line - Rate: " + rate + " - Arrival time: " + System.nanoTime());
                     state = 2;
                     //redPaint.setAlpha(100); TODO: FIGURE OUT HOW TO CHANGE ALPHA WITHOUT TAKING A SHIT ON FPS
                 }
@@ -147,6 +156,8 @@ public class KillerHorizontalLine {
                 //endX -= speed;
                 //endY = rate * (Globals.GAME_WIDTH - endX) + startY;
                 if (endX <= 0){
+                    Log.d(getClass().getName(), "Horizontal Line - Rate: " + rate + " - Arrival time: " + System.nanoTime());
+
                     state = 2;
                     //redPaint.setAlpha(100);
                 }

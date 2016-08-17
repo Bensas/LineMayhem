@@ -19,7 +19,7 @@ public class Spawner {
     ArrayList<KillerHorizontalLine> horizontalLines = new ArrayList<>();
     ArrayList<KillerVerticalLine> verticalLines = new ArrayList<>();
 
-    SoundPool soundPool;
+    //SoundPool soundPool;
     int soundId1, soundId2, soundId3, soundId4;
     int soundTimer = 0;
 
@@ -30,11 +30,11 @@ public class Spawner {
 
     public Spawner (MainGameScript mainGame){
         soundTimer = 0;
-        soundPool = new SoundPool(4, AudioManager.STREAM_MUSIC, 0);
-        soundId1 = soundPool.load(mainGame.getContext(), R.raw.line_effect_3, 1);
-        soundId2 = soundPool.load(mainGame.getContext(), R.raw.line_explode1, 1);
-        soundId3 = soundPool.load(mainGame.getContext(), R.raw.line_explode2, 1);
-        soundId4 = soundPool.load(mainGame.getContext(), R.raw.line_explode3, 1);
+        //soundPool = new SoundPool(4, AudioManager.STREAM_MUSIC, 0);
+//        soundId1 = soundPool.load(mainGame.getContext(), R.raw.line_effect_3, 1);
+//        soundId2 = soundPool.load(mainGame.getContext(), R.raw.line_explode1, 1);
+//        soundId3 = soundPool.load(mainGame.getContext(), R.raw.line_explode2, 1);
+//        soundId4 = soundPool.load(mainGame.getContext(), R.raw.line_explode3, 1);
 
     }
 
@@ -47,18 +47,22 @@ public class Spawner {
             //Every one second, we spawn a line and reset the timer
             if (timer <= 0){
                 if (rnd.nextBoolean()){
-                    createHorizontalLine(playerY);
+                    checkForCloseHorizontalETAs(createHorizontalLine(playerY));
                 } else {
-                    createVerticalLine(playerX);
+                    checkForCloseVerticalETAs(createVerticalLine(playerX));
                 }
                 //mediaPlayer.start();
 
                 //Each time we reset the timer, we set it lower than before
-                timer = 100 - timerReduction;
-                timerReduction += 4;
+                timer = 110 - timerReduction;
+                timerReduction += 3;
 
-                if (timerReduction > 40){
-                    timerReduction = 40;
+                if (timerReduction > 66){
+                    Log.d(getClass().getSimpleName(), "Max difficulty reached!");
+                    if (verticalLines.size() == 4){
+                        verticalLines.remove(createVerticalLine(playerX));
+                    }
+                    timerReduction = 66;
                 }
                 Log.d(getClass().getSimpleName(), "Timer reduction: " + timerReduction);
             }
@@ -79,26 +83,6 @@ public class Spawner {
                 createHorizontalLine(0).resetLineWithCustomAttributes(true, false, 8f, Globals.GAME_WIDTH, 600, -0.3f);
 
             }
-//            if (timer <= 0){
-//                if (lineCounter == 0){
-//                    createVerticalLine(0).resetLineWithCustomAttributes(true, false, 10f, 300, 0, 0.3f);
-//                    lineCounter++;
-//                    timer = 140;
-//                }
-//                else if (lineCounter == 1){
-//                    createHorizontalLine(0).resetLineWithCustomAttributes(false, true, 10f, 0, 500, 0.3f);
-//                    lineCounter++;
-//                    timer = 140;
-//                } else if (lineCounter == 2){
-//                    createVerticalLine(0).resetLineWithCustomAttributes(false, true, 9f, 150, Globals.GAME_HEIGHT, 0.3f);
-//                    lineCounter++;
-//                    timer = 90;
-//                } else if (lineCounter == 3){
-//                    createHorizontalLine(0).resetLineWithCustomAttributes(true, false, 8f, Globals.GAME_WIDTH, 600, -0.3f);
-//                    lineCounter = 0;
-//                    timer = 240;
-//                }
-//            }
         }
 
 
@@ -163,6 +147,7 @@ public class Spawner {
                     mainGame.currentScore += 1;
                 }
                 line.state = 0;
+                line.rate = 0;
             }
         }
     }
@@ -191,29 +176,30 @@ public class Spawner {
         return null;
     }
 
-    public void playDestroySound(){
-        float playbackSpeed = 1.5f;
-        soundPool.stop(soundId1);
-        soundPool.play(soundId1, 0.4f, 0.4f, 0, 0, playbackSpeed);
-        if (soundTimer < 96){
-            Log.d(getClass().getSimpleName(), "played destroy sound1");
-            soundPool.stop(soundId2);
-            soundPool.play(soundId2, 0.4f, 0.4f, 0, 0, 1);
-            //sound1.start();
-        } else if (soundTimer < 168){
-            Log.d(getClass().getSimpleName(), "played destroy sound2");
-            soundPool.stop(soundId3);
-            soundPool.play(soundId3, 0.4f, 0.4f, 0, 0, 1);
-            //sound2.start();
 
-        } else if (soundTimer < 384){
-            Log.d(getClass().getSimpleName(), "played destroy sound3");
-            soundPool.stop(soundId4);
-            soundPool.play(soundId4, 0.4f, 0.4f, 0, 0, 1);
-            //sound3.start();
-            soundTimer = 0;
+    //We use this method to avoid two lines exploding (roughly) at the same time in a way that
+    //makes it impossible for the player to survive.
+    public void checkForCloseHorizontalETAs(KillerHorizontalLine line){
+        for (KillerHorizontalLine horizontalLine: horizontalLines){
+            if (horizontalLine != line && horizontalLine.direction != line.direction && Math.abs(horizontalLine.ETA - line.ETA) < (long)600000000){
+                line.state = 0;
+                line.rate = 0;
+                Log.d(getClass().getSimpleName(), "CLOSE ETAS DETECTED FOR TWO HORIZONTAL LINES!" + horizontalLine.ETA + " - " + line.ETA + " - Abs value: " + Math.abs(horizontalLine.ETA - line.ETA));
+            }
+        }
+
+    }
+
+    public void checkForCloseVerticalETAs(KillerVerticalLine line){
+        for (KillerVerticalLine verticalLine: verticalLines){
+            if (verticalLine != line && verticalLine.direction != line.direction && Math.abs(verticalLine.ETA - line.ETA) < (long)600000000){
+                line.state = 0;
+                line.rate = 0;
+                Log.d(getClass().getSimpleName(), "CLOSE ETAS DETECTED FOR TWO VERTICAL LINES!" + verticalLine.ETA + " - " + line.ETA + " - Abs value: " + Math.abs(verticalLine.ETA - line.ETA));
+            }
         }
     }
+
 
     public void draw(Canvas canvas){
         //int counter = 0;
@@ -234,7 +220,7 @@ public class Spawner {
     public void reset(){
         verticalLines.clear();
         horizontalLines.clear();
-        for (int i = 0; i < 5; i++){
+        for (int i = 0; i < 4; i++){
             verticalLines.add(new KillerVerticalLine());
             horizontalLines.add(new KillerHorizontalLine());
         }

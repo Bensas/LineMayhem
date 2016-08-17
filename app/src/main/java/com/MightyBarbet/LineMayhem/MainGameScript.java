@@ -3,24 +3,24 @@ package com.MightyBarbet.LineMayhem;
 import android.app.Activity;
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.PorterDuff;
-import android.media.AudioManager;
 import android.media.MediaPlayer;
-import android.media.SoundPool;
 import android.os.Bundle;
-import android.os.Parcelable;
 import android.util.Log;
 import android.view.MotionEvent;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
+import android.widget.Toast;
 
 
-import com.google.android.gms.ads.AdActivity;
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.games.Games;
+import com.google.firebase.analytics.FirebaseAnalytics;
 
 import java.util.ArrayList;
 import java.util.Random;
@@ -37,8 +37,10 @@ public class MainGameScript extends SurfaceView implements SurfaceHolder.Callbac
     private LineMayhem context;
 
     private MainThread thread;
-    private SoundPool soundPool;
-    private int soundId;
+
+    public MediaPlayer mediaPlayer;
+    public int fadeoutCounter = 0;
+    public boolean musicOn = true;
 
     private GoogleApiClient googleApiClient;
     private final static String LEADERBOARD_ID = "CgkIlaKbopsaEAIQAA";
@@ -50,6 +52,8 @@ public class MainGameScript extends SurfaceView implements SurfaceHolder.Callbac
     private float swipeStartX, swipeStartY, swipeDeltaX, swipeDeltaY, swipeDeltaTime;
 
     ArrayList<TextButton> mainMenuElements = new ArrayList<>();
+    private Bitmap logoBitmap;
+    private Paint logoPaint;
     int logoBounceTimer = 0;
 
     ArrayList<TextButton> gameOverMenuElements = new ArrayList<>();
@@ -90,8 +94,15 @@ public class MainGameScript extends SurfaceView implements SurfaceHolder.Callbac
         setFocusable(true);
 
         thread = new MainThread(getHolder(), this);
-        soundPool = new SoundPool(4, AudioManager.STREAM_MUSIC, 0);
-        soundId = soundPool.load(getContext(), R.raw.music3, 1);
+
+        logoBitmap = Bitmap.createScaledBitmap(BitmapFactory.decodeResource(getResources(), R.drawable.logo), 720, 352, false);
+        logoPaint = new Paint();
+
+        mediaPlayer = MediaPlayer.create(context, R.raw.music);
+        mediaPlayer.setLooping(true);
+        //soundPool = new SoundPool(4, AudioManager.STREAM_MUSIC, 0);
+        //musicId = soundPool.load(getContext(), R.raw.music4, 1);
+        //soundPool.setLoop(musicId, -1);
 
         //mediaPlayer.setLooping(true);
     }
@@ -100,22 +111,29 @@ public class MainGameScript extends SurfaceView implements SurfaceHolder.Callbac
     @Override
     public void surfaceCreated(SurfaceHolder holder){
         if (player == null){
-            googleApiClient.connect();
+            try{
+                googleApiClient.connect();
+            } catch (Exception e){
+                e.printStackTrace();
+            }
             scaleFactorX = getWidth()/(Globals.GAME_WIDTH * 1.0f);
             scaleFactorY = getHeight() / (Globals.GAME_HEIGHT * 1.0f);
 
-            mainMenuElements.add(new TextLogo(Globals.GAME_WIDTH/2, 250, 150, "Line", Paint.Align.CENTER, true, 0, getContext()));
-            mainMenuElements.add(new TextLogo(Globals.GAME_WIDTH/2, 400, 140, "MayheM", Paint.Align.CENTER, true, 0, getContext()));
+            //mainMenuElements.add(new TextLogo(Globals.GAME_WIDTH/2, 250, 150, "Line", Paint.Align.CENTER, true, 0, getContext()));
+            //mainMenuElements.add(new TextLogo(Globals.GAME_WIDTH/2, 400, 140, "MayheM", Paint.Align.CENTER, true, 0, getContext()));
 
             mainMenuElements.add(new TextButton(Globals.GAME_WIDTH/2, 600, 50, getResources().getString(R.string.button_play), Paint.Align.CENTER, true, 2, getContext()));
             mainMenuElements.add(new TextButton(Globals.GAME_WIDTH/2, 800, 50, getResources().getString(R.string.button_instructions), Paint.Align.CENTER, true, 4, getContext()));
             mainMenuElements.add(new TextButton(Globals.GAME_WIDTH/2, 1000, 50, getResources().getString(R.string.button_highscores), Paint.Align.CENTER, true, 0, getContext()));
+            mainMenuElements.add(new TextButton(Globals.GAME_WIDTH/2, 1150, 30, getResources().getString(R.string.button_music), Paint.Align.CENTER, true, 0, getContext()));
+
 
             instructionsMenuElements.add(new TextButton(Globals.GAME_WIDTH/2, 100, 60, getResources().getString(R.string.button_instructions) + ":", Paint.Align.CENTER, false, 0, getContext()));
             instructionsMenuElements.add(new TextButton(Globals.GAME_WIDTH/2, 250, 32, getResources().getString(R.string.text_instructions1), Paint.Align.CENTER, false, 0, getContext()));
-            instructionsMenuElements.add(new TextButton(Globals.GAME_WIDTH/2, 850, 32, getResources().getString(R.string.text_instructions2), Paint.Align.CENTER, false, 0, getContext()));
-            instructionsMenuElements.add(new TextButton(Globals.GAME_WIDTH/2, 900, 35, getResources().getString(R.string.text_instructions3), Paint.Align.CENTER, false, 0, getContext()));
-            instructionsMenuElements.add(new TextButton(Globals.GAME_WIDTH/2, 1050, 60, getResources().getString(R.string.button_play), Paint.Align.CENTER, true, 2, getContext()));
+            instructionsMenuElements.add(new TextButton(Globals.GAME_WIDTH/2, 300, 32, getResources().getString(R.string.text_instructions12), Paint.Align.CENTER, false, 0, getContext()));
+            instructionsMenuElements.add(new TextButton(Globals.GAME_WIDTH/2, 950, 32, getResources().getString(R.string.text_instructions2), Paint.Align.CENTER, false, 0, getContext()));
+            instructionsMenuElements.add(new TextButton(Globals.GAME_WIDTH/2, 1000, 35, getResources().getString(R.string.text_instructions3), Paint.Align.CENTER, false, 0, getContext()));
+            instructionsMenuElements.add(new TextButton(Globals.GAME_WIDTH/2, 1150, 60, getResources().getString(R.string.button_play), Paint.Align.CENTER, true, 2, getContext()));
 
             instructionsMenuPaint = new Paint();
             instructionsMenuPaint.setColor(Color.WHITE);
@@ -127,7 +145,7 @@ public class MainGameScript extends SurfaceView implements SurfaceHolder.Callbac
             gameOverMenuElements.add(new TextButton(Globals.GAME_WIDTH/2, 500, 50, "You survived", Paint.Align.CENTER, false, 0, getContext()));
             gameOverMenuElements.add(new TextButton(Globals.GAME_WIDTH/2, 595, 65, "0", Paint.Align.CENTER, false, 6, getContext())); //*NatGeo voice* The score element is distinguished by it's unlikely statePointer
             gameOverMenuElements.add(new TextButton(Globals.GAME_WIDTH/2, 680, 50, "killer Lines!", Paint.Align.CENTER, false, 0, getContext()));
-            gameOverMenuElements.add(new TextButton(Globals.GAME_WIDTH/2, 875, 50, "Highscores", Paint.Align.CENTER, true, 0, getContext()));
+            gameOverMenuElements.add(new TextButton(Globals.GAME_WIDTH/2, 875, 50, getResources().getString(R.string.button_highscores), Paint.Align.CENTER, true, 0, getContext()));
             gameOverMenuElements.add(new TextButton(Globals.GAME_WIDTH/2, 1050, 70, "Play Again", Paint.Align.CENTER, true, 2, getContext()));
 
             score = new TextButton(Globals.BOUNDARY_WIDTH + 10, Globals.BOUNDARY_WIDTH + 40, 35, "Score: " + currentScore, Paint.Align.LEFT, false, 0, context);
@@ -142,6 +160,11 @@ public class MainGameScript extends SurfaceView implements SurfaceHolder.Callbac
             boundaries = new Boundaries();
 
             spawner = new Spawner(this);
+        }
+        if (gameState == 2){
+            if (!mediaPlayer.isPlaying()){
+                mediaPlayer.start();
+            }
         }
 
         if (thread.getState() == Thread.State.TERMINATED) {
@@ -158,7 +181,12 @@ public class MainGameScript extends SurfaceView implements SurfaceHolder.Callbac
     public void surfaceDestroyed(SurfaceHolder holder){
         int counter = 0;
         boolean retry = true;
-        soundPool.release();
+        //soundPool.pause(musicId);
+        if (mediaPlayer.isPlaying()){
+            mediaPlayer.pause();
+        } else {
+
+        }
         while(retry && counter < 1000){
             counter++;
             try{
@@ -273,10 +301,26 @@ public class MainGameScript extends SurfaceView implements SurfaceHolder.Callbac
         //The state pointer is 0 if the button does not change the game state. In this case we check the text of the button to react accordingly.
         if (button.statePointer == 0){
             if (button.text.equals("Highscores")){
-                if (!googleApiClient.isConnected()){
+                if (googleApiClient != null && !googleApiClient.isConnected()){
                     googleApiClient.connect();
                 } else {
-                    ((Activity)context).startActivityForResult(Games.Leaderboards.getLeaderboardIntent(googleApiClient, LEADERBOARD_ID), 9002);
+                    try{
+                        ((Activity)context).startActivityForResult(Games.Leaderboards.getLeaderboardIntent(googleApiClient, LEADERBOARD_ID), 9002);
+                    } catch (Exception e){
+                        e.printStackTrace();
+                        Toast toast = new Toast(context);
+                        toast.makeText(context, "Google Play Services is not connected :(", Toast.LENGTH_SHORT);
+                        toast.show();
+                    }
+                }
+            }
+            else if (button.text.contains("Music")){
+                if (musicOn){
+                    musicOn = false;
+                    button.setText("Music: OFF");
+                } else {
+                    musicOn = true;
+                    button.setText("Music: ON");
                 }
             }
         } else {
@@ -324,16 +368,16 @@ public class MainGameScript extends SurfaceView implements SurfaceHolder.Callbac
         //Undecent, unpretty, hardcoded code
         if ((player.x - player.width/2) < Globals.BOUNDARY_WIDTH){
             player.x = Globals.BOUNDARY_WIDTH + player.width/2;
-            player.setSpeedX(-player.speedX * 0.5);
+            player.setSpeedX(-player.speedX * 0.2);
         } else if ( player.x + player.width/2 > (Globals.GAME_WIDTH - Globals.BOUNDARY_WIDTH)){
             player.x = (Globals.GAME_WIDTH - Globals.BOUNDARY_WIDTH) - player.width/2;
-            player.setSpeedX(-player.speedX * 0.5);
+            player.setSpeedX(-player.speedX * 0.2);
         } else if ((player.y - player.height/2) < Globals.BOUNDARY_WIDTH){
             player.y = Globals.BOUNDARY_WIDTH + player.height/2;
-            player.setSpeedY(-player.speedY * 0.5);
+            player.setSpeedY(-player.speedY * 0.2);
         } else if (player.y + player.height/2 > (Globals.GAME_HEIGHT - Globals.BOUNDARY_WIDTH)){
             player.y = (Globals.GAME_HEIGHT - Globals.BOUNDARY_WIDTH) - player.height/2;
-            player.setSpeedY(-player.speedY * 0.5);
+            player.setSpeedY(-player.speedY * 0.2);
         }
     }
 
@@ -415,8 +459,19 @@ public class MainGameScript extends SurfaceView implements SurfaceHolder.Callbac
 
             //This happens when the play button is pressed
             case 2:
-                soundPool.stop(soundId);
-                soundPool.play(soundId, 1, 1, 0, -1, 1);
+                //if (soundPool.)
+                //soundPool.play(musicId, 1, 1, 0, -1, 1);
+
+//                try{
+//                    mediaPlayer.prepare();
+//                } catch (IOException e){
+//                    e.printStackTrace();
+//                }
+                if (musicOn){
+                    mediaPlayer.seekTo(0);
+                    mediaPlayer.setVolume(1, 1);
+                    mediaPlayer.start();
+                }
 
                 resetGame();
                 gameState = 2;
@@ -425,6 +480,15 @@ public class MainGameScript extends SurfaceView implements SurfaceHolder.Callbac
 
             //This happens when the player dies
             case 3:
+                fadeoutCounter++;
+
+                //soundPool.setVolume(musicId, 1 - 0.1f*fadeoutCounter, 1 - 0.1f*fadeoutCounter);
+                mediaPlayer.setVolume(1 - 0.1f*fadeoutCounter, 1 - 0.1f*fadeoutCounter);
+                //soundPool.stop(musicId);
+
+                player.radius += fadeoutCounter * 15;
+                player.paint.setAlpha(255-fadeoutCounter*50);
+
                 for (TextButton element: gameOverMenuElements){
                     element.y = element.defaultY + gameStateTimer;
                 }
@@ -433,8 +497,15 @@ public class MainGameScript extends SurfaceView implements SurfaceHolder.Callbac
                     gameState = 3;
                     nextGameState = 0;
 
-                    interstitialAdCounter++;
+                    //soundPool.stop(musicId);
+                    mediaPlayer.setVolume(0, 0);
+                    mediaPlayer.pause();
 
+                    player.paint.setAlpha(255);
+                    player.radius = 10;
+                    fadeoutCounter = 0;
+
+                    interstitialAdCounter++;
                     Random rnd = new Random();
                     if (interstitialAdCounter >= 2 && rnd.nextBoolean()){
                         context.runOnUiThread(new Runnable() {
@@ -457,8 +528,15 @@ public class MainGameScript extends SurfaceView implements SurfaceHolder.Callbac
                         prefEditor.apply();
                     }
 
-                    Games.Leaderboards.submitScore(googleApiClient, LEADERBOARD_ID, sharedPrefs.getInt("HIGH_SCORE", 999999));
+                    try{
+                        Games.Leaderboards.submitScore(googleApiClient, LEADERBOARD_ID, sharedPrefs.getInt("HIGH_SCORE", 999999));
 
+                        Bundle scoreBundle = new Bundle();
+                        scoreBundle.putInt(FirebaseAnalytics.Param.SCORE, currentScore);
+                        ((LineMayhem)context).firebaseClient.logEvent(FirebaseAnalytics.Event.POST_SCORE, scoreBundle);
+                    } catch (Exception e){
+                        e.printStackTrace();
+                    }
                 }
                 break;
             case 4:
@@ -491,6 +569,19 @@ public class MainGameScript extends SurfaceView implements SurfaceHolder.Callbac
         switch (gameState){
             case 1:
                 logoBounceTimer += 1;
+                if (logoBounceTimer < 30){
+                    canvas.drawBitmap(logoBitmap,-2, 60, logoPaint);
+                } else if (logoBounceTimer < 40){
+                    canvas.drawBitmap(logoBitmap,-2, 67, logoPaint);
+                } else if (logoBounceTimer < 70){
+                    canvas.drawBitmap(logoBitmap,-2, 74, logoPaint);
+                } else if (logoBounceTimer < 90){
+                    canvas.drawBitmap(logoBitmap,-2, 67, logoPaint);
+                } else{
+                    canvas.drawBitmap(logoBitmap,-2, 60, logoPaint);
+                    logoBounceTimer = 0;
+                }
+
                 for (TextButton button: mainMenuElements){
                     if (button.getClass() == TextLogo.class){
                         if (logoBounceTimer < 30){
@@ -546,6 +637,8 @@ public class MainGameScript extends SurfaceView implements SurfaceHolder.Callbac
         boundaries.draw(canvas);
 
         canvas.restoreToCount(savedCanvasState);
+
+        invalidate();
 
     }
 }
