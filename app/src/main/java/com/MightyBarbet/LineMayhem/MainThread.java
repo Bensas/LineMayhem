@@ -57,7 +57,7 @@ public class MainThread extends Thread {
             waitTime = targetTime - timeMilliseconds;
 
             try{
-                this.sleep(waitTime);
+                Thread.sleep(waitTime);
             }catch(Exception e){}
 
             totalTime += System.nanoTime() - startTime;

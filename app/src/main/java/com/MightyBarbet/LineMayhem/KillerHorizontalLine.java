@@ -102,7 +102,7 @@ public class KillerHorizontalLine {
         this.startingSide = startingSide;
         this.direction = direction;
         this.speed = speed;
-        this.rate = rate * ((Globals.GAME_HEIGHT - startY) / Globals.GAME_WIDTH);
+        this.rate = rate;
 
         if (!startingSide){
             this.startY = startY;
@@ -140,7 +140,7 @@ public class KillerHorizontalLine {
                 //endX += speed;
                 //endY = rate * endX + startY;
                 if (currentEndX >= Globals.GAME_WIDTH){
-                    Log.d(getClass().getName(), "Horizontal Line - Rate: " + rate + " - Arrival time: " + System.nanoTime());
+                    //Log.d(getClass().getName(), "Horizontal Line - Rate: " + rate + " - Arrival time: " + System.nanoTime());
                     state = 2;
                     //redPaint.setAlpha(100);
                 }
@@ -150,7 +150,7 @@ public class KillerHorizontalLine {
                 //endX -= speed;
                 //endY = rate * (Globals.GAME_WIDTH - endX) + startY;
                 if (currentEndX <= 0){
-                    Log.d(getClass().getName(), "Horizontal Line - Rate: " + rate + " - Arrival time: " + System.nanoTime());
+                    //Log.d(getClass().getName(), "Horizontal Line - Rate: " + rate + " - Arrival time: " + System.nanoTime());
 
                     state = 2;
                     //redPaint.setAlpha(100);

@@ -93,7 +93,7 @@ public class KillerVerticalLine {
             currentEndX = startX;
         }
 
-        Log.d(getClass().getCanonicalName(), "Vertical Line - Rate: " + rate + " - Current time: " + System.nanoTime() + " - ETA: " + ETA);
+        //Log.d(getClass().getCanonicalName(), "Vertical Line - Rate: " + rate + " - Current time: " + System.nanoTime() + " - ETA: " + ETA);
 
         state = 1;
         alphaCounter = 0;
@@ -143,7 +143,7 @@ public class KillerVerticalLine {
                 currentEndX = endXs[updateIndex];
                 //endX = rate * (Globals.GAME_HEIGHT - endY) + startX;
                 if (currentEndY <= 0){
-                    Log.d(getClass().getName(), "Vertical Line - Rate: " + rate + " - Arrival time: " + System.nanoTime());
+                    //Log.d(getClass().getName(), "Vertical Line - Rate: " + rate + " - Arrival time: " + System.nanoTime());
                     state = 2;
                     //redPaint.setAlpha(100);
                 }
@@ -152,7 +152,7 @@ public class KillerVerticalLine {
                 currentEndX = endXs[updateIndex];
                 //endX = rate * endY + startX;
                 if (currentEndY >= Globals.GAME_HEIGHT){
-                    Log.d(getClass().getName(), "Vertical Line - Rate: " + rate + " - Arrival time: " + System.nanoTime());
+                    //Log.d(getClass().getName(), "Vertical Line - Rate: " + rate + " - Arrival time: " + System.nanoTime());
                     state = 2;
                     //redPaint.setAlpha(100);
                 }

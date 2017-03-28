@@ -7,8 +7,8 @@ import android.graphics.Rect;
  */
 public abstract class GameObject {
 
-    protected int x;
-    protected int y;
+    protected short x;
+    protected short y;
     protected double speedX, accelX;
     protected double speedY, accelY;
     protected int width;
@@ -37,11 +37,11 @@ public abstract class GameObject {
 
 
     //Setters
-    public void setX(int x){
+    public void setX(short x){
         this.x = x;
     }
 
-    public void setY(int y){
+    public void setY(short y){
         this.y = y;
     }
 

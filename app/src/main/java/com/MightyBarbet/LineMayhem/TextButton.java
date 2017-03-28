@@ -22,7 +22,7 @@ public class TextButton {
     int isPressed = 0; //Would use a boolean if I could interact with it as 0 or 1 without too much hassle
     Rect boundaries;
     Paint paint;
-
+    int color;
     public TextButton(int x, int y, int fontSize, String text, Paint.Align alignment, boolean isPressable, int statePointer, Context context){
         defaultX = x;
         defaultY = y;
@@ -39,6 +39,7 @@ public class TextButton {
         paint.setTextSize(fontSize);
         typeface = Typeface.createFromAsset(context.getAssets(), "fonts/pixelmix.ttf");
         paint.setTypeface(typeface);
+        color = Color.WHITE;
 
         //getTextBounds generates a rectangle on the origin, storing it on the boundaries Rect. We then position it at the button's location.
         boundaries = new Rect();
@@ -48,7 +49,7 @@ public class TextButton {
     }
 
     public void draw(Canvas canvas){
-        boundaries = new Rect(x - boundaries.width()/2, y - boundaries.height(), x + boundaries.width()/2, y);
+        //boundaries = new Rect(x - boundaries.width()/2, y - boundaries.height(), x + boundaries.width()/2, y);
         if (isPressable){
             paint.setStyle(Paint.Style.STROKE);
             paint.setColor(Color.RED);
@@ -59,16 +60,23 @@ public class TextButton {
             canvas.drawRect(boundaries.left-20, boundaries.top-20 + isPressed*12, boundaries.right+20, boundaries.bottom+20 + isPressed*12, paint);
         }
         paint.setStyle(Paint.Style.FILL);
-        paint.setColor(Color.WHITE);
+        paint.setColor(color);
 
         //When the button is being pressed, it moves down a bit to indicate so.
         canvas.drawText(text, x, y + isPressed*12, paint);
     }
 
+    public void setFontSize(int size){
+        paint.setTextSize(size);
+    }
     public void setText(String newText){
         text = newText;
         boundaries = new Rect();
         paint.getTextBounds(text, 0, text.length(), boundaries);
         boundaries = new Rect(x - boundaries.width()/2, y - boundaries.height(), x + boundaries.width()/2, y);
+    }
+
+    public void setColor(int color){
+        this.color = color;
     }
 }

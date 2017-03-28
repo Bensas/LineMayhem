@@ -12,25 +12,38 @@ import android.util.Log;
  * Created by Bensas on 5/5/15. Actually used on 01/06/2016 (june)
  */
 public class Player extends GameObject{
-
+    String id, ign;
+    TextButton nameTag;
     Paint paint = new Paint();
-    public int radius = 10;
-    public Bitmap skinArrow;
+    public int radius = 10, fadeoutCounter;
+    public Bitmap skin;
+
+    //These booleans are for multiplayer games.
+    public boolean isAlive = true, hasExploded = false, isReady = false;
+    int score;
 
     //Variables used for movement
     private double speedFactor = 0.33;
 
     //Constructor
-    public Player(Context context){
-        paint.setColor(Color.WHITE);
+    public Player(Context context, String colorStr, String id, String ign){
+        this.id = id;
+        this.ign = ign;
+        nameTag = new TextButton(x, y-32, 30, ign, Paint.Align.CENTER, false, 0, context);
+        nameTag.setColor(Color.parseColor(colorStr));
+        setSkin(colorStr);
         paint.setStyle(Paint.Style.FILL);
-        skinArrow = BitmapFactory.decodeResource(context.getResources(), R.drawable.skin_arrow);
+        skin = BitmapFactory.decodeResource(context.getResources(), R.drawable.skin_arrow);
 
         x = Globals.GAME_WIDTH / 2;
         y = Globals.GAME_HEIGHT / 2;
 
         width = 2 * radius;
         height = 2 * radius;
+    }
+
+    public void setSkin(String skinString){
+        paint.setColor(Color.parseColor(skinString));
     }
 
     //MovePlayer method takes swypeDelta values from the main script and modifies the speed based on it.
@@ -57,6 +70,8 @@ public class Player extends GameObject{
         y += speedY;
 
         radius = (int)(10 + (Math.abs(speedX) + Math.abs(speedY))/40);
+        nameTag.x = x;
+        nameTag.y = y - 32;
         //System.out.println(x + " - " + y);
     }
 

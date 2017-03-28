@@ -8,16 +8,22 @@
     <string name="welcome_to_line_mayhem">Welcome to Line Mayhem!</string>
 
     <string name="button_play">Play</string>
+    <string name="button_multiplayer">Multiplayer</string>
     <string name="button_instructions">Instructions</string>
     <string name="button_highscores">Highscores</string>
-    <string name="button_music">Music: ON</string>
+    <string name="button_music_on">Music: ON</string>
 
-    <string name="button_next">Next</string>
-    <string name="button_previous">Previous</string>
+    <string name="button_quick_game">Quick Game</string>
+    <string name="button_invite_players">Invite Players</string>
+    <string name="button_my_invites">My Invites</string>
+    <string name="button_ready">Play Again?</string>
+    <string name="button_waiting">Waiting for other players</string>
 
     <string name="text_instructions1">Use short swipes on the</string>
     <string name="text_instructions12">screen to move!</string>
     <string name="text_instructions2">Stay on the white side of the</string>
     <string name="text_instructions3">lines or you\'ll die!</string>
 
+    <string name="button_next">Next</string>
+    <string name="button_previous">Previous</string>
 </resources>
