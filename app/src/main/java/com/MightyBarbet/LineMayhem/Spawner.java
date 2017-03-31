@@ -1,6 +1,7 @@
 package com.MightyBarbet.LineMayhem;
 
 import android.graphics.Canvas;
+import android.graphics.Paint;
 import android.media.AudioManager;
 import android.media.SoundPool;
 import android.util.Log;
@@ -24,10 +25,13 @@ public class Spawner {
     KillerVerticalLine[] verticalLines = new KillerVerticalLine[4];
     int vLineCount;
 
-    int lineBufferSize = 20, currentLineIndex;
-    boolean[] lineTypes, lineDirections, lineStartingSides;
-    float[] lineSpeeds, lineRates;
-    short[] lineStartPos;
+    int lineBufferSize = 20;
+    int currentLineBuffer = 0;
+    LineBuffer[] lineBuffers = new LineBuffer[]{
+            new LineBuffer(lineBufferSize),
+            new LineBuffer(lineBufferSize)
+    };
+    int lineBufferIndex = 0;
 
     int timer = 100, timerReduction = 30; //0= horizontal line, 1= vertical line
 
@@ -39,11 +43,12 @@ public class Spawner {
                 if (!mainGame.multiplayer || mainGame.isHost){
                     if (rnd.nextBoolean()){
                         //Log.d(getClass().getSimpleName(), "Generating Horizontal line...");
-                        broadcastHorizontalLine(checkForCloseHorizontalETAs(createHorizontalLine(playerY)), mainGame);
+                        broadcastHorizontalLine(checkForCloseHorizontalETAs(createHorizontalLine(playerY, System.nanoTime(), mainGame)), mainGame);
                     } else {
                         //Log.d(getClass().getSimpleName(), "Generating Vertical line...");
-                        broadcastVerticalLine(checkForCloseVerticalETAs(createVerticalLine(playerX)), mainGame);
+                        broadcastVerticalLine(checkForCloseVerticalETAs(createVerticalLine(playerX, System.nanoTime(), mainGame)), mainGame);
                     }
+                    Log.d("Spawner", "Line created");
 
 
                     //Each time we reset the timer, we set it lower than before
@@ -60,7 +65,7 @@ public class Spawner {
                                     if (verticalLines[i].state == 0){
                                         verticalLines[i] = null;
                                         vLineCount = 3;
-                                        Log.d("Spawnerr", "REMOVING ONE VERTICAL LINE");
+                                        Log.d("Spawner", "REMOVING ONE VERTICAL LINE");
                                     }
                                 }
                             }
@@ -73,16 +78,16 @@ public class Spawner {
         //We set a specific spawning pattern for the instructions menu
         else if (mainGame.gameState == 4){
             if (mainGame.instructionsAnimationTimer == 130){
-                createVerticalLine(0).resetLineWithCustomAttributes(true, false, 10f, 300, 0, 0.3f);
+                createVerticalLine(0, System.nanoTime(), mainGame).resetLineWithCustomAttributes(true, false, 10f, 300, 0, 0.3f);
             }
             else if (mainGame.instructionsAnimationTimer == 270){
-                createHorizontalLine(0).resetLineWithCustomAttributes(false, true, 10f, 0, 500, 0.3f);
+                createHorizontalLine(0, System.nanoTime(), mainGame).resetLineWithCustomAttributes(false, true, 10f, 0, 500, 0.3f);
             }
             else if (mainGame.instructionsAnimationTimer == 410){
-                createVerticalLine(0).resetLineWithCustomAttributes(false, true, 9f, 150, Globals.GAME_HEIGHT, 0.3f);
+                createVerticalLine(0, System.nanoTime(), mainGame).resetLineWithCustomAttributes(false, true, 9f, 150, Globals.GAME_HEIGHT, 0.3f);
             }
             else if (mainGame.instructionsAnimationTimer == 500 ){
-                createHorizontalLine(0).resetLineWithCustomAttributes(true, false, 8f, Globals.GAME_WIDTH, 600, -0.3f);
+                createHorizontalLine(0, System.nanoTime(), mainGame).resetLineWithCustomAttributes(true, false, 8f, Globals.GAME_WIDTH, 600, -0.3f);
             }
         }
 
@@ -157,58 +162,29 @@ public class Spawner {
         }
     }
 
-//    public void generateLineBuffer(){
-//        for (int i = 0; i< lineBufferSize; i++){
-//            if (rnd.nextBoolean()){
-//                //Log.d(getClass().getSimpleName(), "Generating Horizontal line...");
-//                checkForCloseHorizontalETAs(createHorizontalLine(playerY)), mainGame;
-//            } else {
-//                //Log.d(getClass().getSimpleName(), "Generating Vertical line...");
-//                checkForCloseVerticalETAs(createVerticalLine(playerX)), mainGame);
-//            }
-//        }
-//    }
-
-    public KillerHorizontalLine createHorizontalLine(int playerY){
-        for (KillerHorizontalLine line: horizontalLines){
-            if (line != null) {
-                if (line.state == 0){
-                    line.resetLine(playerY, rnd);
-                    line.state = 1;
-                    return  line;
-                }
-            }
-        }
-        //Log.d("CreateHorizontalLine", "No inactive(available) lines found. :(");
-        return  null;
-    }
-
-    public KillerVerticalLine createVerticalLine(int playerX){
-        for (KillerVerticalLine line: verticalLines){
-            if (line != null){
-                if (line.state == 0){
-                    line.resetLine(playerX, rnd);
-                    line.state = 1;
-                    return line;
-                }
-            }
-        }
-        //Log.d("CreateVerticalLine", "No inactive(available) lines found. :(");
-        return null;
-    }
-
-    public void broadcastHorizontalLine(KillerHorizontalLine line, MainGameScript mainGame){
-        if (!mainGame.multiplayer || line.state == 0)
+    public void generateAndBroadcastLineBuffer(MainGameScript mainGame){
+        if (!mainGame.multiplayer)
             return;
-        ByteBuffer buffer = ByteBuffer.allocate(22);
+        for (int i = 0; i< lineBufferSize; i++){
+            lineBuffers[currentLineBuffer].lineTypes[i] = rnd.nextBoolean()?(short)1:0;
+            lineBuffers[currentLineBuffer].lineDirections[i] = rnd.nextBoolean()?(short)1:0;
+            lineBuffers[currentLineBuffer].lineStartingSides[i] = rnd.nextBoolean()?(short)1:0;
+            lineBuffers[currentLineBuffer].lineSpeedRnds[i] = rnd.nextFloat() * ((lineBuffers[currentLineBuffer].lineTypes[i] ==1)?11f:16f);
+            lineBuffers[currentLineBuffer].lineRateFloatRnds[i] = rnd.nextFloat();
+            lineBuffers[currentLineBuffer].lineStartRnds[i] = lineBuffers[currentLineBuffer].lineTypes[i]==1?(short)rnd.nextInt(400):(short)rnd.nextInt(350);
+        }
+
+        //2 bytes for the 'L' character. Short size = 2 bytes, float size = 4 bytes
+        ByteBuffer buffer = ByteBuffer.allocate(2 + (4 * lineBufferSize * 2) + (2 * lineBufferSize * 4));
         buffer.putChar('L');
-        buffer.putChar('H');
-        buffer.putShort(line.startingSide?(short)1:(short)0);
-        buffer.putShort(line.direction?(short)1:(short)0);
-        buffer.putFloat(line.speed);
-        buffer.putShort((short)line.startX);
-        buffer.putShort((short)line.startY);
-        buffer.putFloat(line.rate);
+        for (int i = 0; i < lineBufferSize; i++){
+            buffer.putShort(lineBuffers[currentLineBuffer].lineTypes[i]);
+            buffer.putShort(lineBuffers[currentLineBuffer].lineDirections[i]);
+            buffer.putShort(lineBuffers[currentLineBuffer].lineStartingSides[i]);
+            buffer.putFloat(lineBuffers[currentLineBuffer].lineSpeedRnds[i]);
+            buffer.putFloat(lineBuffers[currentLineBuffer].lineRateFloatRnds[i]);
+            buffer.putShort(lineBuffers[currentLineBuffer].lineStartRnds[i]);
+        }
         mainGame.mMovMsgBuf = buffer.array();
         //Log.d("BroadcastLine", "Line buffer successfully created");
         //Games.RealTimeMultiplayer.sendUnreliableMessageToOthers(mainGame.googleApiClient, mainGame.mMovMsgBuf, mainGame.context.mRoomId);
@@ -226,21 +202,95 @@ public class Spawner {
         buffer.clear();
     }
 
-    public void broadcastVerticalLine(KillerVerticalLine line, MainGameScript mainGame){
+    public KillerHorizontalLine createHorizontalLine(int playerY, long startTime, MainGameScript mainGame){
+        for (KillerHorizontalLine line: horizontalLines){
+            if (line != null) {
+                if (line.state == 0){
+                    if (mainGame.multiplayer){
+                        //Log.d("Spawner", "Cerating line...");
+                        line.resetLineWithCustomAttributes(lineBuffers[currentLineBuffer].lineStartingSides[lineBufferIndex] == 1,
+                                lineBuffers[currentLineBuffer].lineDirections[lineBufferIndex] == 1,
+                                lineBuffers[currentLineBuffer].lineSpeedRnds[lineBufferIndex],
+                                lineBuffers[currentLineBuffer].lineRateFloatRnds[lineBufferIndex],
+                                lineBuffers[currentLineBuffer].lineStartRnds[lineBufferIndex],
+                                playerY,
+                                startTime);
+                        lineBufferIndex++;
+                        //Log.d("Spawner", "Line created");
+                    } else {
+                        line.resetLine(playerY, rnd);
+                    }
+                    line.state = 1;
+                    return  line;
+                }
+            }
+        }
+        //Log.d("CreateHorizontalLine", "No inactive(available) lines found. :(");
+        return  null;
+    }
+
+    public KillerVerticalLine createVerticalLine(int playerX, long startTime, MainGameScript mainGame){
+        for (KillerVerticalLine line: verticalLines){
+            if (line != null){
+                if (line.state == 0){
+                    if (mainGame.multiplayer){
+                        //Log.d("Spawner", "Cerating line...");
+
+                        line.resetLineWithCustomAttributes(lineBuffers[currentLineBuffer].lineStartingSides[lineBufferIndex] == 1,
+                                lineBuffers[currentLineBuffer].lineDirections[lineBufferIndex] == 1,
+                                lineBuffers[currentLineBuffer].lineSpeedRnds[lineBufferIndex],
+                                lineBuffers[currentLineBuffer].lineRateFloatRnds[lineBufferIndex],
+                                lineBuffers[currentLineBuffer].lineStartRnds[lineBufferIndex],
+                                playerX,
+                                startTime);
+                        lineBufferIndex++;
+                        //Log.d("Spawner", "Line created");
+                    } else {
+                        line.resetLine(playerX, rnd);
+                    }
+                    line.state = 1;
+                    return  line;
+                }
+            }
+        }
+        //Log.d("CreateVerticalLine", "No inactive(available) lines found. :(");
+        return null;
+    }
+
+    public void broadcastHorizontalLine(KillerHorizontalLine line, MainGameScript mainGame){
+        //Log.d("Spawner", "About to broadcast Horizontal line");
         if (!mainGame.multiplayer || line.state == 0)
             return;
-        ByteBuffer buffer = ByteBuffer.allocate(22);
-        buffer.putChar('L');
-        buffer.putChar('V');
-        buffer.putShort(line.startingSide?(short)1:(short)0);
-        buffer.putShort(line.direction?(short)1:(short)0);
-        buffer.putFloat(line.speed);
-        buffer.putShort((short)line.startX);
-        buffer.putShort((short)line.startY);
-        buffer.putFloat(line.rate);
+        ByteBuffer buffer = ByteBuffer.allocate(12);
+        buffer.putChar('l');
+        buffer.putShort(mainGame.player.y);
+        buffer.putLong(line.startTime);
         mainGame.mMovMsgBuf = buffer.array();
         //Log.d("BroadcastLine", "Line buffer successfully created");
-        //Games.RealTimeMultiplayer.sendUnreliableMessageToOthers(mainGame.googleApiClient, mainGame.mMovMsgBuf, mainGame.context.mRoomId);
+        // Send to every other participant.
+        for (Participant p : mainGame.context.mParticipants) {
+            if (p.getParticipantId().equals(mainGame.context.mMyId))
+                continue;
+            if (p.getStatus() != Participant.STATUS_JOINED)
+                continue;
+            else
+                // final score notification must be sent via reliable message
+                Games.RealTimeMultiplayer.sendReliableMessage(mainGame.googleApiClient, null, mainGame.mMovMsgBuf,
+                        mainGame.context.mRoomId, p.getParticipantId());
+        }
+        buffer.clear();
+    }
+
+    public void broadcastVerticalLine(KillerVerticalLine line, MainGameScript mainGame){
+        //Log.d("Spawner", "About to broadcast Vertical line");
+        if (!mainGame.multiplayer || line.state == 0)
+            return;
+        ByteBuffer buffer = ByteBuffer.allocate(12);
+        buffer.putChar('l');
+        buffer.putShort(mainGame.player.x);
+        buffer.putLong(line.startTime);
+        mainGame.mMovMsgBuf = buffer.array();
+        //Log.d("BroadcastLine", "Line buffer successfully created");
         // Send to every other participant.
         for (Participant p : mainGame.context.mParticipants) {
             if (p.getParticipantId().equals(mainGame.context.mMyId))
@@ -268,6 +318,7 @@ public class Spawner {
                 }
             }
         }
+        //Log.d("Spawner", "Checking close ETAs");
         return line;
     }
 
@@ -281,6 +332,7 @@ public class Spawner {
                 }
             }
         }
+        //Log.d("Spawner", "Checking close ETAs");
         return line;
     }
 
@@ -301,11 +353,13 @@ public class Spawner {
         }
     }
 
-    public void reset(){
+    public void reset(MainGameScript mainGame){
         for (int i = 0; i < 4; i++){
             verticalLines[i] = new KillerVerticalLine();
             horizontalLines[i] = new KillerHorizontalLine();
         }
+        if (mainGame.multiplayer && mainGame.isHost)
+            generateAndBroadcastLineBuffer(mainGame);
         vLineCount = 4;
         timerReduction = 0;
         timer = 100;

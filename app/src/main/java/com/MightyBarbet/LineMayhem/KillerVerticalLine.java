@@ -14,23 +14,18 @@ import java.util.Random;
  */
 public class KillerVerticalLine {
 
-    float startX, startY, currentEndX, currentEndY;
-    float[] endXs, endYs;
-    float speed, rate;
-
-    long ETA;
-
-    int updateIndex;
-
-    //startingSide: 0 is bottom, 1 is top --- direction: 0 is leftwards, 1 is rightwards
-    boolean startingSide, direction;
-
-    //0 means inactive, 1 means extending, 2 means exploding, 3 means hasExploded (post-explosion animation is playing)
-    int state;
-
     public Paint whitePaint;
     public Paint redPaint;
     public int alphaCounter = 0;
+    float startX, startY, currentEndX, currentEndY;
+    float[] endXs, endYs;
+    float speed, rate;
+    long startTime, ETA;
+    int updateIndex;
+    //startingSide: 0 is bottom, 1 is top --- direction: 0 is leftwards, 1 is rightwards
+    boolean startingSide, direction;
+    //0 means inactive, 1 means extending, 2 means exploding, 3 means hasExploded (post-explosion animation is playing)
+    int state;
 
     public KillerVerticalLine (){
         state = 0;
@@ -55,6 +50,7 @@ public class KillerVerticalLine {
             this.speed = 8;
         }
 
+        startTime = System.nanoTime();
         ETA = System.nanoTime() + (long)((long)(1000000000/60) * (Globals.GAME_HEIGHT / speed));
 
         startX = playerX + rnd.nextInt(350) - 175;
@@ -129,6 +125,55 @@ public class KillerVerticalLine {
             }
             currentEndY = startY;
             currentEndX = startX;
+        }
+
+        state = 1;
+        alphaCounter = 0;
+        updateIndex = 0;
+    }
+    //This method is used in multiplayer games.
+    //Instead of creating random numbers for rate and startX of the line, it receives them. (For all devices to create the same line)
+    //It also received the time when the line was created in the original device, in order to sync the position of the line.
+    public void resetLineWithCustomAttributes(boolean startingSide, boolean direction,float speed, float rateRnd, float startXRnd, int playerX, long startTime){
+        this.startingSide = startingSide;
+        this.direction = direction;
+        this.speed = speed;
+        this.startTime = startTime;
+
+        startX = playerX + startXRnd - 175;
+        if (startX < Globals.BOUNDARY_WIDTH){
+            startX = Globals.BOUNDARY_WIDTH;
+        } else if (startX > Globals.GAME_WIDTH - Globals.BOUNDARY_WIDTH){
+            startX = Globals.GAME_WIDTH - Globals.BOUNDARY_WIDTH;
+        }
+
+        if (startX <= playerX){
+            this.rate = rateRnd>0.1f?rateRnd * ((Globals.GAME_WIDTH - startX) / Globals.GAME_HEIGHT): 0.1f * ((Globals.GAME_WIDTH - startX) / Globals.GAME_HEIGHT);
+        } else {
+            this.rate = rateRnd>0.1f? -rateRnd*(startX/Globals.GAME_HEIGHT) : -0.1f*(startX/Globals.GAME_HEIGHT);
+        }
+
+        if (!startingSide){
+            this.startY = Globals.GAME_HEIGHT;
+            endYs = new float[(int)(Globals.GAME_HEIGHT / speed)+10];
+            endXs = new float[endYs.length + 10];
+            for (int i = 0; i < endYs.length; i++){
+                endYs[i] = startY - speed * i;
+                endXs[i] = rate * (Globals.GAME_HEIGHT - endYs[i]) + startX;
+            }
+            currentEndY = startY;
+            currentEndX = startX;
+        } else {
+            this.startY = 0;
+            endYs = new float[(int)(Globals.GAME_HEIGHT / speed)+10];
+            endXs = new float[endYs.length + 10];
+            for (int i = 0; i < endYs.length; i++){
+                endYs[i] = speed * i;
+                endXs[i] = rate * endYs[i] + startX;
+            }
+            currentEndY = endYs[0];
+            currentEndX = endXs[0];
+            Log.d(getClass().getSimpleName(), "Difference in time between devices = " + (System.nanoTime() - startTime));
         }
 
         state = 1;

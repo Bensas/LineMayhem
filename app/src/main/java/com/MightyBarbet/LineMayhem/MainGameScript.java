@@ -43,65 +43,51 @@ import java.util.Random;
  */
 public class MainGameScript extends SurfaceView implements SurfaceHolder.Callback{
 
+    private final static String LEADERBOARD_ID = "CgkIlaKbopsaEAIQAA";
     public LineMayhem context;
-
-    private MainThread thread;
-
     public MediaPlayer mediaPlayer;
     public int fadeoutCounter = 0;
     public boolean musicOn = true;
 
     public GoogleApiClient googleApiClient;
-    private final static String LEADERBOARD_ID = "CgkIlaKbopsaEAIQAA";
-    // Message buffer for sending position message and new line message
-    byte[] mMsgBuf;
-    byte[] mMovMsgBuf;
-
-    //Every time the player's speed is 0, its position is sent; When it dies, it's final position and score are sent
-    boolean hasBroadcastedPosition = false, hasBroadcastedFinalPosition = false;
-
-
-    float scaleFactorX;
-    float scaleFactorY;
-
-    //Variables for swipe interpretation
-    private float swipeStartX, swipeStartY, swipeDeltaX, swipeDeltaY, swipeDeltaTime;
-
-    TextButton[] mainMenuElements = new TextButton[6];
-    private Bitmap logoBitmap;
-    private Paint logoPaint;
-    int logoBounceTimer = 0;
-
-    ArrayList<TextButton> multiplayerMenuElements = new ArrayList<>();
-    TextButton[] multiplayerGameOverMenuElements = new TextButton[12];
-
-    TextButton[] gameOverMenuElements = new TextButton[8];
-    int interstitialAdCounter;
-
-    ArrayList<TextButton> instructionsMenuElements = new ArrayList<>();
-    int instructionsAnimationTimer;
-    Paint instructionsMenuPaint;
-
     public Player player;
     public Player[] otherPlayers;
-    private Boundaries boundaries;
     public Spawner spawner;
-    TextButton score;
-    LoadingIndicator loadingIndicator;
-
-    NotificationsButton notificationsButton;
-    ArrayList<Notification> notifications;
-
     public int currentScore = 0;
     public boolean multiplayer = false;
-    int nameTagDisplayTimer = 300;
-    boolean gameOverScreenReady = false;
     //If this device is the host, then it must send the line information to the rest of the players,
     //not just it's current position
     public boolean isHost = false;
-
     //GameState variable: 1 = main menu, 2 = in game, 3 = end game screen, 4 = instructions page 1, 5 = multiplayer menu;
     public int gameState = 1, nextGameState = 0, gameStateTimer = Globals.GAME_HEIGHT + 200;
+    // Message buffer for sending position message and new line message
+    byte[] mMsgBuf;
+    byte[] mMovMsgBuf;
+    //Every time the player's speed is 0, its position is sent; When it dies, it's final position and score are sent
+    boolean hasBroadcastedPosition = false, hasBroadcastedFinalPosition = false;
+    float scaleFactorX;
+    float scaleFactorY;
+    TextButton[] mainMenuElements = new TextButton[6];
+    int logoBounceTimer = 0;
+    ArrayList<TextButton> multiplayerMenuElements = new ArrayList<>();
+    TextButton[] multiplayerGameOverMenuElements = new TextButton[12];
+    TextButton[] gameOverMenuElements = new TextButton[8];
+    int interstitialAdCounter;
+    ArrayList<TextButton> instructionsMenuElements = new ArrayList<>();
+    int instructionsAnimationTimer;
+    Paint instructionsMenuPaint;
+    TextButton score;
+    LoadingIndicator loadingIndicator;
+    NotificationsButton notificationsButton;
+    ArrayList<Notification> notifications;
+    int nameTagDisplayTimer = 300;
+    boolean gameOverScreenReady = false;
+    private MainThread thread;
+    //Variables for swipe interpretation
+    private float swipeStartX, swipeStartY, swipeDeltaX, swipeDeltaY, swipeDeltaTime;
+    private Bitmap logoBitmap;
+    private Paint logoPaint;
+    private Boundaries boundaries;
 
     //MainScript constructor
     public MainGameScript(LineMayhem context, GoogleApiClient googleApiClient){
@@ -892,7 +878,7 @@ public class MainGameScript extends SurfaceView implements SurfaceHolder.Callbac
 
     //Guess what this does
     public void resetGame(){
-        spawner.reset();
+        spawner.reset(this);
         player.reset();
         currentScore = 0;
         player.isAlive = true;

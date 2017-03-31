@@ -50,39 +50,32 @@ public class LineMayhem extends Activity  implements GoogleApiClient.ConnectionC
         RoomStatusUpdateListener, RoomUpdateListener, OnInvitationReceivedListener {
 
     final static String TAG = "LineMayhem_Activity";
-    private SurfaceView gameView;
-
-    private GoogleApiClient googleApiClient;
-    private boolean mResolvingConnectionFailure = false;
-    private boolean mAutoStartSignInFlow = true;
-    // Request code used to invoke sign in user interactions.
-    private static final int RC_SIGN_IN = 9001;
-
     // Request codes for the UIs that we show with startActivityForResult:
     final static int RC_SELECT_PLAYERS = 10000;
     final static int RC_INVITATION_INBOX = 10001;
     final static int RC_WAITING_ROOM = 10002;
+    // Request code used to invoke sign in user interactions.
+    private static final int RC_SIGN_IN = 9001;
+    public FirebaseAnalytics firebaseClient;
+    public InterstitialAd interstitialAd;
       // Room ID where the currently active game is taking place; null if we're
       // not playing.
       String mRoomId = null;
-
       // The participants in the currently active game
       ArrayList<Participant> mParticipants = null;
       // Participants who sent us their final score.
       Set<String> mFinishedParticipants = new HashSet<String>();
-
       // My participant ID in the currently active game
       String mMyId = null;
-
       // If non-null, this is the id of the invitation we received via the
       // invitation listener
       String mIncomingInvitationId = null;
-
       // Message buffer for sending messages
       byte[] mMsgBuf;
-
-    public FirebaseAnalytics firebaseClient;
-    public InterstitialAd interstitialAd;
+    private SurfaceView gameView;
+    private GoogleApiClient googleApiClient;
+    private boolean mResolvingConnectionFailure = false;
+    private boolean mAutoStartSignInFlow = true;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -723,19 +716,32 @@ public class LineMayhem extends Activity  implements GoogleApiClient.ConnectionC
                 ((MainGameScript)gameView).nextGameState = 3;
             }
         }
-
         else if (messageIdentifier == 'L'){
-            char lineTypeIdentifier = buffer.getChar();
-            if (lineTypeIdentifier == 'H'){
+            Log.d("RealTimeMessageReceived", "Line buffer received!");
+            for (int i = 0; i < ((MainGameScript)gameView).spawner.lineBufferSize; i++){
+                ((MainGameScript)gameView).spawner.lineBuffers[((MainGameScript)gameView).spawner.currentLineBuffer].lineTypes[i] = buffer.getShort();
+                ((MainGameScript)gameView).spawner.lineBuffers[((MainGameScript)gameView).spawner.currentLineBuffer].lineDirections[i] = buffer.getShort();
+                ((MainGameScript)gameView).spawner.lineBuffers[((MainGameScript)gameView).spawner.currentLineBuffer].lineStartingSides[i] = buffer.getShort();
+                ((MainGameScript)gameView).spawner.lineBuffers[((MainGameScript)gameView).spawner.currentLineBuffer].lineSpeedRnds[i] = buffer.getFloat();
+                ((MainGameScript)gameView).spawner.lineBuffers[((MainGameScript)gameView).spawner.currentLineBuffer].lineRateFloatRnds[i] = buffer.getFloat();
+                ((MainGameScript)gameView).spawner.lineBuffers[((MainGameScript)gameView).spawner.currentLineBuffer].lineStartRnds[i] = buffer.getShort();
+            }
+
+        }
+
+        else if (messageIdentifier == 'l'){
+            short playerPos = buffer.getShort();
+            long lineStartTime = buffer.getLong();
+            if (((MainGameScript)gameView).spawner.lineBuffers[((MainGameScript)gameView).spawner.currentLineBuffer].lineTypes[((MainGameScript)gameView).spawner.lineBufferIndex] == 1){
                 try{
-                    ((MainGameScript)gameView).spawner.createHorizontalLine(0).resetLineWithCustomAttributes(buffer.getShort()==1, buffer.getShort()==1, buffer.getFloat(), buffer.getShort(), buffer.getShort(), buffer.getFloat());
+                    ((MainGameScript)gameView).spawner.createHorizontalLine(playerPos, lineStartTime, ((MainGameScript)gameView));
                 } catch (NullPointerException e){
                     Log.d(getClass().getSimpleName(), "HorizontalLine could not be created, there are already 4 lines on screen!");
                 }
                 Log.d("RelTimeMessageReceived", "Real time message received: Horizontal line");
             } else {
                 try{
-                    ((MainGameScript)gameView).spawner.createVerticalLine(0).resetLineWithCustomAttributes(buffer.getShort()==1, buffer.getShort()==1, buffer.getFloat(), buffer.getShort(), buffer.getShort(), buffer.getFloat());
+                    ((MainGameScript)gameView).spawner.createVerticalLine(playerPos, lineStartTime, ((MainGameScript)gameView));
                 } catch (NullPointerException e){
                     Log.d(getClass().getSimpleName(), "VerticalLine could not be created, there are already" + ((MainGameScript)gameView).spawner.vLineCount +   "lines on screen!");
                 }
