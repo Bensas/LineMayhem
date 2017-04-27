@@ -628,7 +628,7 @@ public class LineMayhem extends Activity  implements GoogleApiClient.ConnectionC
     //
     @Override
     public void onRealTimeMessageReceived(RealTimeMessage rtm) {
-        Log.d("RealtimeMessageReceived", "Real time message received.");
+        //Log.d("RealtimeMessageReceived", "Real time message received.");
 
         byte[] buf = rtm.getMessageData();
         String sender = rtm.getSenderParticipantId();
@@ -650,7 +650,7 @@ public class LineMayhem extends Activity  implements GoogleApiClient.ConnectionC
                     allPlayersReady = false;
                 if (allPlayersReady){
                     Log.d("RealtimeMessageReceived", "Host: Starting game...");
-                    ((MainGameScript)gameView).resetGame();
+                    //((MainGameScript)gameView).resetGame();
                     ByteBuffer buffer2 = ByteBuffer.allocate(2);
                     buffer2.putChar('S');
                     mMsgBuf = buffer2.array();
@@ -719,34 +719,47 @@ public class LineMayhem extends Activity  implements GoogleApiClient.ConnectionC
         else if (messageIdentifier == 'L'){
             Log.d("RealTimeMessageReceived", "Line buffer received!");
             for (int i = 0; i < ((MainGameScript)gameView).spawner.lineBufferSize; i++){
-                ((MainGameScript)gameView).spawner.lineBuffers[((MainGameScript)gameView).spawner.currentLineBuffer].lineTypes[i] = buffer.getShort();
-                ((MainGameScript)gameView).spawner.lineBuffers[((MainGameScript)gameView).spawner.currentLineBuffer].lineDirections[i] = buffer.getShort();
-                ((MainGameScript)gameView).spawner.lineBuffers[((MainGameScript)gameView).spawner.currentLineBuffer].lineStartingSides[i] = buffer.getShort();
-                ((MainGameScript)gameView).spawner.lineBuffers[((MainGameScript)gameView).spawner.currentLineBuffer].lineSpeedRnds[i] = buffer.getFloat();
-                ((MainGameScript)gameView).spawner.lineBuffers[((MainGameScript)gameView).spawner.currentLineBuffer].lineRateFloatRnds[i] = buffer.getFloat();
-                ((MainGameScript)gameView).spawner.lineBuffers[((MainGameScript)gameView).spawner.currentLineBuffer].lineStartRnds[i] = buffer.getShort();
+                ((MainGameScript)gameView).spawner.lineBuffers[((MainGameScript)gameView).spawner.nextLineBuffer].lineTypes[i] = buffer.getShort();
+                ((MainGameScript)gameView).spawner.lineBuffers[((MainGameScript)gameView).spawner.nextLineBuffer].lineDirections[i] = buffer.getShort();
+                ((MainGameScript)gameView).spawner.lineBuffers[((MainGameScript)gameView).spawner.nextLineBuffer].lineStartingSides[i] = buffer.getShort();
+                ((MainGameScript)gameView).spawner.lineBuffers[((MainGameScript)gameView).spawner.nextLineBuffer].lineSpeedRnds[i] = buffer.getFloat();
+                ((MainGameScript)gameView).spawner.lineBuffers[((MainGameScript)gameView).spawner.nextLineBuffer].lineRateFloatRnds[i] = buffer.getFloat();
+                ((MainGameScript)gameView).spawner.lineBuffers[((MainGameScript)gameView).spawner.nextLineBuffer].lineStartRnds[i] = buffer.getShort();
             }
+            for (short attribute:((MainGameScript)gameView).spawner.lineBuffers[((MainGameScript)gameView).spawner.nextLineBuffer].lineTypes){
+                Log.d("RealtimeMessageReceived", "Line type: " + attribute);
+            }
+            ((MainGameScript)gameView).spawner.nextLineBuffer = ((MainGameScript)gameView).spawner.nextLineBuffer==0 ? 1 : 0;
+            Log.d("RealtimeMessageReceived", "Next line buffer: " + ((MainGameScript)gameView).spawner.nextLineBuffer);
+            //THE FUCKING NEXTLINEBUFFER IS NOT BEING CHANGED CORRECTLY ON THE NONHOST
+
 
         }
 
         else if (messageIdentifier == 'l'){
             short playerPos = buffer.getShort();
-            long lineStartTime = buffer.getLong();
+            //long lineStartTime = buffer.getLong();
             if (((MainGameScript)gameView).spawner.lineBuffers[((MainGameScript)gameView).spawner.currentLineBuffer].lineTypes[((MainGameScript)gameView).spawner.lineBufferIndex] == 1){
                 try{
-                    ((MainGameScript)gameView).spawner.createHorizontalLine(playerPos, lineStartTime, ((MainGameScript)gameView));
+                    ((MainGameScript)gameView).spawner.createHorizontalLine(playerPos, System.currentTimeMillis(), ((MainGameScript)gameView));
                 } catch (NullPointerException e){
                     Log.d(getClass().getSimpleName(), "HorizontalLine could not be created, there are already 4 lines on screen!");
                 }
-                Log.d("RelTimeMessageReceived", "Real time message received: Horizontal line");
+                //Log.d("RelTimeMessageReceived", "Real time message received: Horizontal line");
             } else {
                 try{
-                    ((MainGameScript)gameView).spawner.createVerticalLine(playerPos, lineStartTime, ((MainGameScript)gameView));
+                    ((MainGameScript)gameView).spawner.createVerticalLine(playerPos, System.currentTimeMillis(), ((MainGameScript)gameView));
                 } catch (NullPointerException e){
                     Log.d(getClass().getSimpleName(), "VerticalLine could not be created, there are already" + ((MainGameScript)gameView).spawner.vLineCount +   "lines on screen!");
                 }
-                Log.d("RelTimeMessageReceived", "Real time message received: Horizontal line");
+                //Log.d("RelTimeMessageReceived", "Real time message received: Vertical line");
             }
+        }
+
+        else if (messageIdentifier == 'n'){
+            Log.d("RelTimeMessageReceived", "Real time message received: skipping line");
+            ((MainGameScript)gameView).spawner.lineBufferIndex++;
+            ((MainGameScript)gameView).spawner.checkForLineBufferGenerationAndBufferSwitch(((MainGameScript)gameView));
         }
 
         buffer.clear();

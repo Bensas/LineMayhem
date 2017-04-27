@@ -13,10 +13,10 @@ import java.util.Random;
  * Created by Bensas on 02/06/16. (june)
  */
 public class KillerVerticalLine {
-
     public Paint whitePaint;
     public Paint redPaint;
     public int alphaCounter = 0;
+    Spawner spawner;
     float startX, startY, currentEndX, currentEndY;
     float[] endXs, endYs;
     float speed, rate;
@@ -27,8 +27,9 @@ public class KillerVerticalLine {
     //0 means inactive, 1 means extending, 2 means exploding, 3 means hasExploded (post-explosion animation is playing)
     int state;
 
-    public KillerVerticalLine (){
+    public KillerVerticalLine (Spawner spawner){
         state = 0;
+        this.spawner = spawner;
 
         whitePaint = new Paint();
         redPaint = new Paint();
@@ -50,8 +51,8 @@ public class KillerVerticalLine {
             this.speed = 8;
         }
 
-        startTime = System.nanoTime();
-        ETA = System.nanoTime() + (long)((long)(1000000000/60) * (Globals.GAME_HEIGHT / speed));
+        startTime = System.currentTimeMillis();
+        ETA = System.currentTimeMillis() + (long)((long)(1000/60) * (Globals.GAME_HEIGHT / speed));
 
         startX = playerX + rnd.nextInt(350) - 175;
         if (startX < Globals.BOUNDARY_WIDTH){
@@ -103,6 +104,13 @@ public class KillerVerticalLine {
         this.speed = speed;
         this.rate = rate;
 
+        if (speed <= 8){
+            this.speed = 8;
+        }
+
+        startTime = System.nanoTime();
+        ETA = System.currentTimeMillis() + (long)((long)(1000/60) * (Globals.GAME_HEIGHT / speed));
+
         if (!startingSide){
             this.startX = startX;
             this.startY = Globals.GAME_HEIGHT;
@@ -134,11 +142,17 @@ public class KillerVerticalLine {
     //This method is used in multiplayer games.
     //Instead of creating random numbers for rate and startX of the line, it receives them. (For all devices to create the same line)
     //It also received the time when the line was created in the original device, in order to sync the position of the line.
-    public void resetLineWithCustomAttributes(boolean startingSide, boolean direction,float speed, float rateRnd, float startXRnd, int playerX, long startTime){
+    public void resetLineWithCustomAttributes(boolean startingSide, boolean direction,float speedRnd, float rateRnd, float startXRnd, int playerX, long startTime){
         this.startingSide = startingSide;
         this.direction = direction;
-        this.speed = speed;
         this.startTime = startTime;
+
+        speed = speedRnd * 16f;
+        if (speed <= 8){
+            this.speed = 8;
+        }
+
+        ETA = startTime + (long)((long)(1000/60) * (Globals.GAME_HEIGHT / speed));
 
         startX = playerX + startXRnd - 175;
         if (startX < Globals.BOUNDARY_WIDTH){
@@ -171,9 +185,12 @@ public class KillerVerticalLine {
                 endYs[i] = speed * i;
                 endXs[i] = rate * endYs[i] + startX;
             }
-            currentEndY = endYs[0];
-            currentEndX = endXs[0];
-            Log.d(getClass().getSimpleName(), "Difference in time between devices = " + (System.nanoTime() - startTime));
+            //((System.currentTimeMillis() - startTime)/1000000)/16.7;
+            Log.d(getClass().getSimpleName(), "Start index: " + (100 - spawner.timerReduction) % spawner.timer);
+            currentEndY = endYs[(100 - spawner.timerReduction) % spawner.timer];
+            currentEndX = endXs[(100 - spawner.timerReduction) % spawner.timer];
+            spawner.resetTimer();
+            //Log.d(getClass().getSimpleName(), "Difference in time between devices = " + (System.currentTimeMillis() - startTime) + "ms");
         }
 
         state = 1;

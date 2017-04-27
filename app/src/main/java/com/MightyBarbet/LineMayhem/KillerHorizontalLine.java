@@ -17,6 +17,7 @@ public class KillerHorizontalLine {
     public Paint whitePaint = new Paint();
     public Paint redPaint = new Paint();
     public int alphaCounter = 0;
+    Spawner spawner;
     float startX, startY, currentEndX, currentEndY;
     float speed, rate;
     long startTime, ETA;
@@ -27,7 +28,9 @@ public class KillerHorizontalLine {
     //0 means inactive, 1 means extending, 2 means exploding, 3 means hasExploded (post-explosion animation is playing)
     int state;
 
-    public KillerHorizontalLine (){
+    public KillerHorizontalLine (Spawner spawner){
+        this.spawner = spawner;
+
         state = 0;
 
         whitePaint.setColor(Color.WHITE);
@@ -101,6 +104,13 @@ public class KillerHorizontalLine {
         this.speed = speed;
         this.rate = rate;
 
+        if (speed <= 3.5f){
+            this.speed = 3.5f;
+        }
+
+        startTime = System.nanoTime();
+        ETA = System.nanoTime() + (long)((long)(1000000000/60) * (Globals.GAME_WIDTH / speed));
+
         if (!startingSide){
             this.startY = startY;
             this.startX = 0;
@@ -132,11 +142,19 @@ public class KillerHorizontalLine {
     //This method is used in multiplayer games.
     //Instead of creating random numbers for rate and startX of the line, it receives them. (For all devices to create the same line)
     //It also received the time when the line was created in the original device, in order to sync the position of the line.
-    public void resetLineWithCustomAttributes(boolean startingSide, boolean direction,float speed, float rateRnd, float startYRnd, int playerY, long startTime){
+    public void resetLineWithCustomAttributes(boolean startingSide, boolean direction,float speedRnd, float rateRnd, float startYRnd, int playerY, long startTime){
         this.startingSide = startingSide;
         this.direction = direction;
         this.speed = speed;
         this.startTime = startTime;
+
+        speed = speedRnd * 11f;
+
+        if (speed <= 3.5f){
+            this.speed = 3.5f;
+        }
+
+        ETA = startTime + (long)((long)(1000/60) * (Globals.GAME_WIDTH / speed));
 
         startY = playerY + startYRnd - 200;
         if (startY > Globals.GAME_HEIGHT - Globals.BOUNDARY_WIDTH){
@@ -169,9 +187,10 @@ public class KillerHorizontalLine {
                 endXs[i] = startX - speed * i;
                 endYs[i] = rate * (Globals.GAME_WIDTH - endXs[i]) + startY;
             }
-            currentEndX = endXs[0];
-            currentEndY = endYs[0];
-            Log.d(getClass().getSimpleName(), "Difference in time between devices = " + (System.nanoTime() - startTime));
+            Log.d(getClass().getSimpleName(), "Start index: " + (100 - spawner.timerReduction) % spawner.timer);
+            currentEndX = endXs[(100 - spawner.timerReduction) % spawner.timer];
+            currentEndY = endYs[(100 - spawner.timerReduction) % spawner.timer];
+            spawner.resetTimer();
         }
 
         state = 1;

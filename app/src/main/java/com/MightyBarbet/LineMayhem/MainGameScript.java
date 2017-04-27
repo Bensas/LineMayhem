@@ -589,7 +589,7 @@ public class MainGameScript extends SurfaceView implements SurfaceHolder.Callbac
         buffer.putShort(player.y);
         mMsgBuf = buffer.array();
         if (nextGameState != 3){
-            Log.d("BroadcastPosition", "Broadcasting position.");
+            //Log.d("BroadcastPosition", "Broadcasting position.");
 
             Games.RealTimeMultiplayer.sendUnreliableMessageToOthers(googleApiClient, mMsgBuf, context.mRoomId);
         }
@@ -597,7 +597,7 @@ public class MainGameScript extends SurfaceView implements SurfaceHolder.Callbac
     }
 
     public void broadcastPlayerScoreAndFinalPosition(){
-        Log.d("BroadcastScore", "Broadcasting score.");
+        //Log.d("BroadcastScore", "Broadcasting score.");
         ByteBuffer buffer = ByteBuffer.allocate(8);
         buffer.putChar('F');
         buffer.putShort(player.x);
@@ -662,13 +662,13 @@ public class MainGameScript extends SurfaceView implements SurfaceHolder.Callbac
                                 boolean allPlayersDead = true;
                                 for (Player player:otherPlayers)
                                     if (player != null){
-                                        Log.d("Update", "Player " + player.ign + " isAlive: " + player.isAlive);
+                                        //Log.d("Update", "Player " + player.ign + " isAlive: " + player.isAlive);
                                         if (player.isAlive)
                                             allPlayersDead = false;
                                     }
                                 if (allPlayersDead){
                                     nextGameState = 3;
-                                    Log.d("Update", "Calling game over screen...");
+                                    //Log.d("Update", "Calling game over screen...");
                                 }
                                 player.hasExploded = true;
                                 player.isReady = false;
