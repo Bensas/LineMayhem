@@ -76,7 +76,8 @@ public class TextButton {
         boundaries = new Rect(x - boundaries.width()/2, y - boundaries.height(), x + boundaries.width()/2, y);
     }
 
-    public void setColor(int color){
+    public TextButton setColor(int color){
         this.color = color;
+        return this;
     }
 }

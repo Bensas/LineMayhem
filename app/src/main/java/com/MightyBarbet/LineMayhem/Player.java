@@ -12,14 +12,14 @@ import android.util.Log;
  * Created by Bensas on 5/5/15. Actually used on 01/06/2016 (june)
  */
 public class Player extends GameObject{
-    String id, ign;
-    TextButton nameTag;
-    Paint paint = new Paint();
     public int radius = 10, fadeoutCounter;
     public Bitmap skin;
-
     //These booleans are for multiplayer games.
     public boolean isAlive = true, hasExploded = false, isReady = false;
+    String id, ign;
+    int connectionAliveTimer = 0;
+    TextButton nameTag;
+    Paint paint = new Paint();
     int score;
 
     //Variables used for movement

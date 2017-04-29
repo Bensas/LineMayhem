@@ -24,6 +24,9 @@
     <string name="text_instructions2">Stay on the white side of the</string>
     <string name="text_instructions3">lines or you\'ll die!</string>
 
+    <string name="text_multiplayer_1">Make sure your connection is stable</string>
+    <string name="text_multiplayer_2">for an optimal experience!</string>
+
     <string name="button_next">Next</string>
     <string name="button_previous">Previous</string>
 </resources>

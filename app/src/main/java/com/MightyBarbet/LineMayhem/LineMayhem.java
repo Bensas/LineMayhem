@@ -1,6 +1,7 @@
 package com.MightyBarbet.LineMayhem;
 
 import android.app.Activity;
+import android.content.Context;
 import android.content.Intent;
 import android.graphics.Paint;
 import android.media.PlaybackParams;
@@ -50,39 +51,32 @@ public class LineMayhem extends Activity  implements GoogleApiClient.ConnectionC
         RoomStatusUpdateListener, RoomUpdateListener, OnInvitationReceivedListener {
 
     final static String TAG = "LineMayhem_Activity";
-    private SurfaceView gameView;
-
-    private GoogleApiClient googleApiClient;
-    private boolean mResolvingConnectionFailure = false;
-    private boolean mAutoStartSignInFlow = true;
-    // Request code used to invoke sign in user interactions.
-    private static final int RC_SIGN_IN = 9001;
-
     // Request codes for the UIs that we show with startActivityForResult:
     final static int RC_SELECT_PLAYERS = 10000;
     final static int RC_INVITATION_INBOX = 10001;
     final static int RC_WAITING_ROOM = 10002;
+    // Request code used to invoke sign in user interactions.
+    private static final int RC_SIGN_IN = 9001;
+    public FirebaseAnalytics firebaseClient;
+    public InterstitialAd interstitialAd;
       // Room ID where the currently active game is taking place; null if we're
       // not playing.
       String mRoomId = null;
-
       // The participants in the currently active game
       ArrayList<Participant> mParticipants = null;
       // Participants who sent us their final score.
       Set<String> mFinishedParticipants = new HashSet<String>();
-
       // My participant ID in the currently active game
       String mMyId = null;
-
       // If non-null, this is the id of the invitation we received via the
       // invitation listener
       String mIncomingInvitationId = null;
-
       // Message buffer for sending messages
       byte[] mMsgBuf;
-
-    public FirebaseAnalytics firebaseClient;
-    public InterstitialAd interstitialAd;
+    private SurfaceView gameView;
+    private GoogleApiClient googleApiClient;
+    private boolean mResolvingConnectionFailure = false;
+    private boolean mAutoStartSignInFlow = true;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -211,7 +205,8 @@ public class LineMayhem extends Activity  implements GoogleApiClient.ConnectionC
 
     @Override
     public void onConnectionSuspended(int i) {
-
+        Log.d(getClass().getSimpleName(), "YOU JUST LOST CONNECTION BITCH");
+        leaveRoom();
     }
 
     @Override
@@ -250,20 +245,20 @@ public class LineMayhem extends Activity  implements GoogleApiClient.ConnectionC
         Log.d(TAG, "Starting quick game");
         Games.RealTimeMultiplayer.create(googleApiClient, rtmConfigBuilder.build());
         Log.d(TAG, "Quick game started");
-        ((MainGameScript)gameView).loadingIndicator.setButton(((MainGameScript)gameView).multiplayerMenuElements.get(0));
+        ((MainGameScript)gameView).loadingIndicator.setButton(((MainGameScript)gameView).multiplayerMenuElements.get(2));
         ((MainGameScript)gameView).loadingIndicator.isVisible = true;
     }
 
     void invitePlayers(){
         Intent intent = Games.RealTimeMultiplayer.getSelectOpponentsIntent(googleApiClient, 1, 3);
-        ((MainGameScript)gameView).loadingIndicator.setButton(((MainGameScript)gameView).multiplayerMenuElements.get(1));
+        ((MainGameScript)gameView).loadingIndicator.setButton(((MainGameScript)gameView).multiplayerMenuElements.get(3));
         ((MainGameScript)gameView).loadingIndicator.isVisible = true;
         startActivityForResult(intent, RC_SELECT_PLAYERS);
     }
 
     void viewInvites(){
         Intent intent = Games.Invitations.getInvitationInboxIntent(googleApiClient);
-        ((MainGameScript)gameView).loadingIndicator.setButton(((MainGameScript)gameView).multiplayerMenuElements.get(2));
+        ((MainGameScript)gameView).loadingIndicator.setButton(((MainGameScript)gameView).multiplayerMenuElements.get(4));
         ((MainGameScript)gameView).loadingIndicator.isVisible = true;
         startActivityForResult(intent, RC_INVITATION_INBOX);
     }
@@ -495,7 +490,7 @@ public class LineMayhem extends Activity  implements GoogleApiClient.ConnectionC
     public void onInvitationReceived(Invitation invitation) {
         //TODO: ((MainGameScript)gameView).notifications.add(new Notification(invitation.getInviter(), ));
         Log.d(getClass().getSimpleName(), "Game Invite received.");
-        ((MainGameScript)gameView).notificationsButton.isVisible = true;
+        //((MainGameScript)gameView).notificationsButton.isVisible = true;
     }
 
     @Override
@@ -506,7 +501,6 @@ public class LineMayhem extends Activity  implements GoogleApiClient.ConnectionC
     @Override
     public void onRoomConnecting(Room room) {
         mParticipants = room.getParticipants();
-
     }
 
     @Override
@@ -531,6 +525,7 @@ public class LineMayhem extends Activity  implements GoogleApiClient.ConnectionC
 
     @Override
     public void onPeerLeft(Room room, List<String> list) {
+        Log.d("OnPeerLeftRoom", "peer has left room");
         for (String id: list){
             int i = 0;
             for (Player player: ((MainGameScript)gameView).otherPlayers){
@@ -541,8 +536,8 @@ public class LineMayhem extends Activity  implements GoogleApiClient.ConnectionC
                             toastHostLeft.show();
                             ((MainGameScript)gameView).nextGameState = 1;
                         } else {
-                            Toast toastHostLeft = Toast.makeText(this, player.ign + " has left the game!", Toast.LENGTH_SHORT);
-                            toastHostLeft.show();
+                            Toast toastPlayerLeft = Toast.makeText(this, player.ign + " has left the game!", Toast.LENGTH_SHORT);
+                            toastPlayerLeft.show();
                         }
                         ((MainGameScript)gameView).otherPlayers[i] = null;
                         for (Player playerr: ((MainGameScript)gameView).otherPlayers){
@@ -554,7 +549,27 @@ public class LineMayhem extends Activity  implements GoogleApiClient.ConnectionC
                 i++;
             }
         }
+        if (((MainGameScript)gameView).gameState == 2){
+            boolean allPlayersDead = true;
+            if (((MainGameScript)gameView).player.isAlive)
+                allPlayersDead = false;
+            for (Player player:((MainGameScript)gameView).otherPlayers)
+                if (player != null){
+                    Log.d("RealTimeMessageReceived", "Player " + player.ign + " isAlive: " + player.isAlive);
+                    if (player.isAlive)
+                        allPlayersDead = false;
+                }
+
+            if (allPlayersDead){
+                Log.d("RealtimeMessageReceived", "Callong GameOver screen...");
+                ((MainGameScript)gameView).nextGameState = 3;
+            }
+        } else {
+            if (((MainGameScript)gameView).loadingIndicator.isVisible)
+                ((MainGameScript)gameView).loadingIndicator.isVisible = false;
+        }
         mParticipants = room.getParticipants();
+
     }
 
 
@@ -570,7 +585,53 @@ public class LineMayhem extends Activity  implements GoogleApiClient.ConnectionC
 
     @Override
     public void onPeersDisconnected(Room room, List<String> list) {
-
+//        Log.d("OnPeersDisc", "PEER LEFT ROOM WITHOUT WARNING HOLY SHIT WHAT AN ASSHOLE.");
+//        for (int i = 0; i < ((MainGameScript)gameView).otherPlayers.length; i++){
+//            if (((MainGameScript)gameView).otherPlayers[i] != null)
+//                Log.d("OnPeerDisc", ((MainGameScript)gameView).otherPlayers[i].ign);
+//        }
+//        for (String id: list){
+//            int i = 0;
+//            for (Player player: ((MainGameScript)gameView).otherPlayers){
+//                if (player != null) {
+//                    Log.d("OnPeerDisc", "Checking on nigga " + i + ". Should be " + id);
+//                    if (id.equals(player.id)) {
+//                        Log.d("OnPeerDisc", "Found ya");
+//
+//                        if (!((MainGameScript) gameView).isHost && i == 0) {
+//                            Toast toastHostLeft = Toast.makeText(this, "Host has left the game!", Toast.LENGTH_SHORT);
+//                            toastHostLeft.show();
+//                            Log.d("OnPeerDisc", "Setting nextGamState to 1");
+//                            ((MainGameScript) gameView).nextGameState = 1;
+//                        } else {
+//                            Toast toastPlayerLeft = Toast.makeText(this, player.ign + " has left the game!", Toast.LENGTH_SHORT);
+//                            toastPlayerLeft.show();
+//                        }
+//                        ((MainGameScript) gameView).otherPlayers[i] = null;
+//                        for (Player playerr : ((MainGameScript) gameView).otherPlayers) {
+//                            if (playerr != null)
+//                                Log.d(getClass().getSimpleName(), "Player: " + playerr.ign);
+//                        }
+//                    }
+//                }
+//                i++;
+//            }
+//        }
+//        boolean allPlayersDead = true;
+//        if (((MainGameScript)gameView).player.isAlive)
+//            allPlayersDead = false;
+//        for (Player player:((MainGameScript)gameView).otherPlayers)
+//            if (player != null){
+//                Log.d("RealTimeMessageReceived", "Player " + player.ign + " isAlive: " + player.isAlive);
+//                if (player.isAlive)
+//                    allPlayersDead = false;
+//            }
+//
+//        if (allPlayersDead){
+//            Log.d("RealtimeMessageReceived", "Callong GameOver screen...");
+//            ((MainGameScript)gameView).nextGameState = 3;
+//        }
+        mParticipants = room.getParticipants();
     }
 
     @Override
@@ -580,7 +641,135 @@ public class LineMayhem extends Activity  implements GoogleApiClient.ConnectionC
 
     @Override
     public void onP2PDisconnected(String s) {
+//        Log.d("OnP2PDisc", "PEER LEFT ROOM WITHOUT WARNING HOLY SHIT WHAT AN ASSHOLE.");
+//
+//        int i = 0;
+//            for (Player player: ((MainGameScript)gameView).otherPlayers){
+//                Log.d("OnP2PDisc", "FINDING OUT WHICH FUCKER DID IT." + i);
+//
+//                if (player != null) {
+//                    Log.d("OnP2PDisc", "FINDING OUT WHICH FUCKER DID IT. FORREAL" + i);
+//                    if (s.equals(player.id)) {
+//                        Log.d("OnP2PDisc", "FINDING OUT WHICH FUCKER DID IT. FORREAL real this time" + i);
+//                        if (!((MainGameScript) gameView).isHost && i == 0) {
+//                            Log.d("OnP2PDisc", "buggah");
+////                            Toast toastHostLeft = Toast.makeText(this, "Host has left the game!", Toast.LENGTH_SHORT);
+////                            toastHostLeft.show();
+//                            Log.d("OnP2PDisc", "bruhggah");
+//                            ((MainGameScript) gameView).nextGameState = 1;
+//                        } else {
+//                            Log.d("OnP2PDisc", "buggahloo");
+//                            Toast toastPlayerLeft = Toast.makeText(this, player.ign + " has left the game!", Toast.LENGTH_SHORT);
+//                            toastPlayerLeft.show();
+//                        }
+//                        Log.d("OnP2PDisc", "seriously bruh");
+//                        ((MainGameScript) gameView).otherPlayers[i] = null;
+//                        for (Player playerr : ((MainGameScript) gameView).otherPlayers) {
+//                            if (playerr != null)
+//                                Log.d(getClass().getSimpleName(), "Player: " + playerr.ign);
+//                        }
+//                    }
+//                }
+//
+//                i++;
+//            }
+//        boolean allPlayersDead = true;
+//        if (((MainGameScript)gameView).player.isAlive)
+//            allPlayersDead = false;
+//        for (Player player:((MainGameScript)gameView).otherPlayers)
+//            if (player != null){
+//                Log.d("RealTimeMessageReceived", "Player " + player.ign + " isAlive: " + player.isAlive);
+//                if (player.isAlive)
+//                    allPlayersDead = false;
+//            }
+//
+//        if (allPlayersDead){
+//            Log.d("RealtimeMessageReceived", "Callong GameOver screen...");
+//            ((MainGameScript)gameView).nextGameState = 3;
+//        }
+        //mParticipants = room.getParticipants();
 
+    }
+
+    public void disconnectPlayerManually(String s){
+        int i = 0;
+        for (Player player: ((MainGameScript)gameView).otherPlayers){
+
+            if (player != null) {
+                if (s.equals(player.id)) {
+                    if (!((MainGameScript) gameView).isHost && i == 0) {
+                        try{
+                            new Thread()
+                            {
+                                public void run()
+                                {
+                                    runOnUiThread(new Runnable()
+                                    {
+                                        public void run()
+                                        {
+                                            Context ctx = getApplicationContext();
+                                            Toast.makeText(ctx, "Connection to host failed!", Toast.LENGTH_SHORT).show();
+                                            //Do your UI operations like dialog opening or Toast here
+                                        }
+                                    });
+                                }
+                            }.start();
+
+                        } catch (Exception e){
+                            e.printStackTrace();
+                            Log.d("manualPlayerDisconnect", "NIGGA WE AIN'T MAKING YOU NO FUCKING TOAST FUCK YOU.");
+                        }
+
+                        ((MainGameScript) gameView).nextGameState = 1;
+                    } else {
+                        try{
+                            new Thread()
+                            {
+                                public void run()
+                                {
+                                    runOnUiThread(new Runnable()
+                                    {
+                                        public void run()
+                                        {
+                                            Context ctx = getApplicationContext();
+                                            Toast.makeText(ctx, "Connection to player failed!", Toast.LENGTH_SHORT).show();
+                                            //Do your UI operations like dialog opening or Toast here
+                                        }
+                                    });
+                                }
+                            }.start();
+                        } catch (Exception e){
+                            e.printStackTrace();
+                            Log.d("manualPlayerDisconnect", "NIGGA WE AIN'T MAKING YOU NO FUCKING TOAST FUCK YOU.");
+                        }
+
+                    }
+                    ((MainGameScript) gameView).otherPlayers[i] = null;
+                    for (Player playerr : ((MainGameScript) gameView).otherPlayers) {
+                        if (playerr != null)
+                            Log.d(getClass().getSimpleName(), "Player: " + playerr.ign);
+                    }
+                }
+            }
+
+            i++;
+        }
+        if (((MainGameScript)gameView).gameState == 2 && ((MainGameScript)gameView).isHost){
+            boolean allPlayersDead = true;
+            if (((MainGameScript)gameView).player.isAlive)
+                allPlayersDead = false;
+            for (Player player:((MainGameScript)gameView).otherPlayers)
+                if (player != null){
+                    Log.d("RealTimeMessageReceived", "Player " + player.ign + " isAlive: " + player.isAlive);
+                    if (player.isAlive)
+                        allPlayersDead = false;
+                }
+
+            if (allPlayersDead){
+                Log.d("RealtimeMessageReceived", "Callong GameOver screen...");
+                ((MainGameScript)gameView).nextGameState = 3;
+            }
+        }
     }
 
     // Called when room has been created
@@ -644,6 +833,7 @@ public class LineMayhem extends Activity  implements GoogleApiClient.ConnectionC
         ByteBuffer buffer = ByteBuffer.wrap(buf);
         char messageIdentifier = buffer.getChar();
 
+        //Message used to indicate readiness to start the game
         if (messageIdentifier == 'S'){
             if (((MainGameScript)gameView).isHost){
                 Log.d("RealtimeMessageReceived", "Host: PlayerReady message received.");
@@ -681,24 +871,26 @@ public class LineMayhem extends Activity  implements GoogleApiClient.ConnectionC
                 if (((MainGameScript)gameView).otherPlayers[0] != null)
                     ((MainGameScript)gameView).otherPlayers[0].isReady = true;
             }
-
-
-
         }
 
-        if (messageIdentifier == 'M'){
+        //Message used to indicate a player swipe
+        else if (messageIdentifier == 'M'){
             float playerMovX = buffer.getFloat();
             float playerMovY = buffer.getFloat();
             //Log.d("RelTimeMessageReceived", "Real time message received: mov x=" + playerMovX + " / mov y=" + playerMovY);
             ((MainGameScript)gameView).getOtherPlayer(sender).movePlayer(playerMovX, playerMovY);
         }
-        if (messageIdentifier == 'P'){
+
+        //Message used to indicate a player's current position
+        else if (messageIdentifier == 'P'){
             short playerX = buffer.getShort();
             short playerY = buffer.getShort();
             //Log.d("RelTimeMessageReceived", "Real time message received: pos x=" + playerX + " / pos y=" + playerY);
             playerSender.setX(playerX);
             playerSender.setY(playerY);
         }
+
+        //Message used to indicate that a player has died
         else if (messageIdentifier == 'F'){
             Log.d("RealtimeMessageReceived", "Host: A player has died!. " + playerSender.ign);
             boolean allPlayersDead = true;
@@ -724,6 +916,7 @@ public class LineMayhem extends Activity  implements GoogleApiClient.ConnectionC
             }
         }
 
+        //Message used to indicate that a line has been created
         else if (messageIdentifier == 'L'){
             char lineTypeIdentifier = buffer.getChar();
             if (lineTypeIdentifier == 'H'){
@@ -740,6 +933,16 @@ public class LineMayhem extends Activity  implements GoogleApiClient.ConnectionC
                     Log.d(getClass().getSimpleName(), "VerticalLine could not be created, there are already" + ((MainGameScript)gameView).spawner.vLineCount +   "lines on screen!");
                 }
                 Log.d("RelTimeMessageReceived", "Real time message received: Horizontal line");
+            }
+        }
+
+        //Message used to make sure that the connection is still alive.
+        //(since onPeersDisconnect and onP2PDisconnect are ridiculously unreliable)
+        else if (messageIdentifier == 'A'){
+            try{
+                ((MainGameScript)gameView).getOtherPlayer(sender).connectionAliveTimer = 0;
+            } catch (NullPointerException e){
+                e.printStackTrace();
             }
         }
 

@@ -14,25 +14,23 @@ import java.util.Random;
  */
 public class KillerVerticalLine {
 
-    float startX, startY, currentEndX, currentEndY;
-    float[] endXs, endYs;
-    float speed, rate;
-
-    long ETA;
-
-    int updateIndex;
-
-    //startingSide: 0 is bottom, 1 is top --- direction: 0 is leftwards, 1 is rightwards
-    boolean startingSide, direction;
-
-    //0 means inactive, 1 means extending, 2 means exploding, 3 means hasExploded (post-explosion animation is playing)
-    int state;
-
     public Paint whitePaint;
     public Paint redPaint;
     public int alphaCounter = 0;
+    Spawner spawner;
+    float startX, startY, currentEndX, currentEndY;
+    float[] endXs, endYs;
+    float speed, rate;
+    long ETA;
+    int updateIndex;
+    //startingSide: 0 is bottom, 1 is top --- direction: 0 is leftwards, 1 is rightwards
+    boolean startingSide, direction;
+    //0 means inactive, 1 means extending, 2 means exploding, 3 means hasExploded (post-explosion animation is playing)
+    int state;
 
-    public KillerVerticalLine (){
+    public KillerVerticalLine (Spawner spawner){
+        this.spawner = spawner;
+
         state = 0;
 
         whitePaint = new Paint();
@@ -58,10 +56,10 @@ public class KillerVerticalLine {
         ETA = System.nanoTime() + (long)((long)(1000000000/60) * (Globals.GAME_HEIGHT / speed));
 
         startX = playerX + rnd.nextInt(350) - 175;
-        if (startX < Globals.BOUNDARY_WIDTH){
-            startX = Globals.BOUNDARY_WIDTH;
-        } else if (startX > Globals.GAME_WIDTH - Globals.BOUNDARY_WIDTH){
-            startX = Globals.GAME_WIDTH - Globals.BOUNDARY_WIDTH;
+        if (startX < Globals.BOUNDARY_WIDTH + 15){
+            startX = Globals.BOUNDARY_WIDTH + 15;
+        } else if (startX > Globals.GAME_WIDTH - Globals.BOUNDARY_WIDTH - 15){
+            startX = Globals.GAME_WIDTH - Globals.BOUNDARY_WIDTH - 15;
         }
 
         float randomFloat = rnd.nextFloat();
@@ -100,7 +98,7 @@ public class KillerVerticalLine {
         updateIndex = 0;
     }
 
-    //This method allows manually setting of the attributes to create custom lines. It's used in the instructions menu.
+    //This method allows manually setting of the attributes to create custom lines. It's used in the instructions menu and in multiplayer mode.
     public void resetLineWithCustomAttributes(boolean startingSide, boolean direction,float speed, int startX, int startY, float rate){
         this.startingSide = startingSide;
         this.direction = direction;
@@ -116,8 +114,6 @@ public class KillerVerticalLine {
                 endYs[i] = startY - speed * i;
                 endXs[i] = rate * (Globals.GAME_HEIGHT - endYs[i]) + startX;
             }
-            currentEndY = startY;
-            currentEndX = startX;
         } else {
             this.startX = startX;
             this.startY = 0;
@@ -127,13 +123,37 @@ public class KillerVerticalLine {
                 endYs[i] = speed * i;
                 endXs[i] = rate * endYs[i] + startX;
             }
-            currentEndY = startY;
-            currentEndX = startX;
+        }
+
+        if (spawner.mainGame.multiplayer) {
+            if (!spawner.firstLineLaunched){
+                currentEndX = endXs[0];
+                currentEndY = endYs[0];
+                spawner.resetTimer();
+                spawner.firstLineLaunched = true;
+            }else{
+                try{
+                    currentEndX = endXs[-spawner.timer];
+                    currentEndY = endYs[-spawner.timer];
+                    updateIndex = -spawner.timer;
+                } catch (ArrayIndexOutOfBoundsException e){
+                    Log.d("HorizontalLine", "Spawner timer does not fit array: " + spawner.timer);
+                    Log.d("HorizontalLine", "Array size: " + endXs.length);
+                    currentEndX = endXs[0];
+                    currentEndY = endYs[0];
+                }
+
+                spawner.resetTimer();
+            }
+
+        } else {
+            currentEndX = endXs[0];
+            currentEndY = endYs[0];
+            updateIndex = 0;
         }
 
         state = 1;
         alphaCounter = 0;
-        updateIndex = 0;
     }
 
     public void update(){

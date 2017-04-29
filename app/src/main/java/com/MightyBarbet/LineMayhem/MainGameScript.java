@@ -43,65 +43,53 @@ import java.util.Random;
  */
 public class MainGameScript extends SurfaceView implements SurfaceHolder.Callback{
 
+    private final static String LEADERBOARD_ID = "CgkIlaKbopsaEAIQAA";
     public LineMayhem context;
-
-    private MainThread thread;
-
     public MediaPlayer mediaPlayer;
     public int fadeoutCounter = 0;
     public boolean musicOn = true;
 
     public GoogleApiClient googleApiClient;
-    private final static String LEADERBOARD_ID = "CgkIlaKbopsaEAIQAA";
-    // Message buffer for sending position message and new line message
-    byte[] mMsgBuf;
-    byte[] mMovMsgBuf;
-
-    //Every time the player's speed is 0, its position is sent; When it dies, it's final position and score are sent
-    boolean hasBroadcastedPosition = false, hasBroadcastedFinalPosition = false;
-
-
-    float scaleFactorX;
-    float scaleFactorY;
-
-    //Variables for swipe interpretation
-    private float swipeStartX, swipeStartY, swipeDeltaX, swipeDeltaY, swipeDeltaTime;
-
-    TextButton[] mainMenuElements = new TextButton[6];
-    private Bitmap logoBitmap;
-    private Paint logoPaint;
-    int logoBounceTimer = 0;
-
-    ArrayList<TextButton> multiplayerMenuElements = new ArrayList<>();
-    TextButton[] multiplayerGameOverMenuElements = new TextButton[12];
-
-    TextButton[] gameOverMenuElements = new TextButton[8];
-    int interstitialAdCounter;
-
-    ArrayList<TextButton> instructionsMenuElements = new ArrayList<>();
-    int instructionsAnimationTimer;
-    Paint instructionsMenuPaint;
-
     public Player player;
     public Player[] otherPlayers;
-    private Boundaries boundaries;
+    public int[] playerPingTimers;
+    public int playerPingMainTimer = 0;
     public Spawner spawner;
-    TextButton score;
-    LoadingIndicator loadingIndicator;
-
-    NotificationsButton notificationsButton;
-    ArrayList<Notification> notifications;
-
     public int currentScore = 0;
     public boolean multiplayer = false;
-    int nameTagDisplayTimer = 300;
-    boolean gameOverScreenReady = false;
     //If this device is the host, then it must send the line information to the rest of the players,
     //not just it's current position
     public boolean isHost = false;
-
     //GameState variable: 1 = main menu, 2 = in game, 3 = end game screen, 4 = instructions page 1, 5 = multiplayer menu;
     public int gameState = 1, nextGameState = 0, gameStateTimer = Globals.GAME_HEIGHT + 200;
+    // Message buffer for sending position message and new line message
+    byte[] mMsgBuf;
+    byte[] mMovMsgBuf;
+    //Every time the player's speed is 0, its position is sent; When it dies, it's final position and score are sent
+    boolean hasBroadcastedPosition = false, hasBroadcastedFinalPosition = false;
+    float scaleFactorX;
+    float scaleFactorY;
+    TextButton[] mainMenuElements = new TextButton[6];
+    int logoBounceTimer = 0;
+    ArrayList<TextButton> multiplayerMenuElements = new ArrayList<>();
+    TextButton[] multiplayerGameOverMenuElements = new TextButton[12];
+    TextButton[] gameOverMenuElements = new TextButton[8];
+    int interstitialAdCounter;
+    ArrayList<TextButton> instructionsMenuElements = new ArrayList<>();
+    int instructionsAnimationTimer;
+    Paint instructionsMenuPaint;
+    TextButton score;
+    LoadingIndicator loadingIndicator;
+    //NotificationsButton notificationsButton;
+    ArrayList<Notification> notifications;
+    int nameTagDisplayTimer = 300;
+    boolean gameOverScreenReady = false;
+    private MainThread thread;
+    //Variables for swipe interpretation
+    private float swipeStartX, swipeStartY, swipeDeltaX, swipeDeltaY, swipeDeltaTime;
+    private Bitmap logoBitmap;
+    private Paint logoPaint;
+    private Boundaries boundaries;
 
     //MainScript constructor
     public MainGameScript(LineMayhem context, GoogleApiClient googleApiClient){
@@ -166,6 +154,8 @@ public class MainGameScript extends SurfaceView implements SurfaceHolder.Callbac
             musicOn = sharedPrefs.getBoolean("MUSIC_ON", true);
             mainMenuElements[5] = new TextButton(Globals.GAME_WIDTH/2, 1125, 30, musicOn? "Music: ON" : "Music: OFF", Paint.Align.CENTER, true, 0, getContext());
 
+            multiplayerMenuElements.add(new TextButton(Globals.GAME_WIDTH/2 , 432, 25, getResources().getString(R.string.text_multiplayer_1), Paint.Align.CENTER, false, 0, getContext()).setColor(Color.YELLOW));
+            multiplayerMenuElements.add(new TextButton(Globals.GAME_WIDTH/2 , 466, 25, getResources().getString(R.string.text_multiplayer_2), Paint.Align.CENTER, false, 0, getContext()).setColor(Color.YELLOW));
             multiplayerMenuElements.add(new TextButton(Globals.GAME_WIDTH/2, 600, 50, getResources().getString(R.string.button_quick_game), Paint.Align.CENTER, true, 0, getContext()));
             multiplayerMenuElements.add(new TextButton(Globals.GAME_WIDTH/2, 850, 50, getResources().getString(R.string.button_invite_players), Paint.Align.CENTER, true, 0, getContext()));
             multiplayerMenuElements.add(new TextButton(Globals.GAME_WIDTH/2, 1100, 50, getResources().getString(R.string.button_my_invites), Paint.Align.CENTER, true, 0, getContext()));
@@ -205,7 +195,7 @@ public class MainGameScript extends SurfaceView implements SurfaceHolder.Callbac
             multiplayerGameOverMenuElements[11] = new TextButton(Globals.GAME_WIDTH/2, 1250, 30, "Waiting for other players...", Paint.Align.CENTER, false, 0, getContext());
 
 
-            notificationsButton = new NotificationsButton(context);
+            //notificationsButton = new NotificationsButton(context);
             score = new TextButton(Globals.BOUNDARY_WIDTH + 10, Globals.BOUNDARY_WIDTH + 40, 35, "Score: " + currentScore, Paint.Align.LEFT, false, 0, context);
 
             loadingIndicator = new LoadingIndicator(getContext());
@@ -213,6 +203,7 @@ public class MainGameScript extends SurfaceView implements SurfaceHolder.Callbac
             //Instantiate player and background
             player = new Player(getContext(), "white", "", "");
             otherPlayers = new Player[3];
+            playerPingTimers = new int[3];
 
             //Create boundaries
             boundaries = new Boundaries();
@@ -643,6 +634,25 @@ public class MainGameScript extends SurfaceView implements SurfaceHolder.Callbac
         buffer.clear();
     }
 
+    public void broadcastConnectionIsAlive(){
+        ByteBuffer buffer = ByteBuffer.allocate(2);
+        buffer.putChar('A');
+        mMsgBuf = buffer.array();
+        // Send to every other participant.
+        for (Participant p : context.mParticipants) {
+            if (p.getParticipantId().equals(context.mMyId))
+                continue;
+            if (p.getStatus() != Participant.STATUS_JOINED)
+                continue;
+            else
+                // final score notification must be sent via reliable message
+                Games.RealTimeMultiplayer.sendReliableMessage(googleApiClient, null, mMsgBuf,
+                        context.mRoomId, p.getParticipantId());
+        }
+        //Games.RealTimeMultiplayer.sendUnreliableMessageToOthers(googleApiClient, mMovMsgBuf, context.mRoomId);
+        buffer.clear();
+    }
+
     //Update function
     public void update(){
         switch (gameState){
@@ -652,6 +662,11 @@ public class MainGameScript extends SurfaceView implements SurfaceHolder.Callbac
                 player.update();
                 if (multiplayer){
 
+                    playerPingMainTimer++;
+                    if (playerPingMainTimer > 80){
+                        broadcastConnectionIsAlive();
+                        playerPingMainTimer = 0;
+                    }
                     //We broadcast the player's position every time it stops moving
                     if (player.speedX == 0 && player.speedY == 0 && player.isAlive) {
                         if (!hasBroadcastedPosition) {
@@ -713,6 +728,11 @@ public class MainGameScript extends SurfaceView implements SurfaceHolder.Callbac
                                     }
                                 }
                             }
+                            player.connectionAliveTimer++;
+                            if (player.connectionAliveTimer > 200){
+                                player.connectionAliveTimer = 0;
+                                context.disconnectPlayerManually(player.id);
+                            }
                         }
                     }
                 }
@@ -726,6 +746,26 @@ public class MainGameScript extends SurfaceView implements SurfaceHolder.Callbac
                 spawner.update(player.x, player.y, this);
                 break;
             case 3:
+                if (multiplayer){
+                    playerPingMainTimer++;
+                    if (playerPingMainTimer > 80){
+                        //Log.d("Update", "JDNASKDNKASDJ");
+                        broadcastConnectionIsAlive();
+                        playerPingMainTimer = 0;
+                    }
+                    for (Player player: otherPlayers){
+                        if (player != null){
+                            player.connectionAliveTimer++;
+                            if (player.connectionAliveTimer > 200){
+                                player.connectionAliveTimer = 0;
+                                Log.d("Update", "PLAYER FAILED TO REAPOND TO PING");
+                                context.disconnectPlayerManually(player.id);
+                                if (loadingIndicator.isVisible)
+                                    loadingIndicator.isVisible = false;
+                            }
+                        }
+                    }
+                }
                 if (multiplayer && !isHost && otherPlayers[0] != null && otherPlayers[0].isReady){
                     loadingIndicator.isVisible = false;
                     resetGame();
@@ -788,6 +828,8 @@ public class MainGameScript extends SurfaceView implements SurfaceHolder.Callbac
             case 0:
                 break;
             case 1:
+                Log.d("HandleGameStateChag", "DNSAKDAKD1");
+
                 mediaPlayer.pause();
                 if (multiplayer && googleApiClient.isConnected()){
                     context.leaveRoom();
@@ -799,6 +841,7 @@ public class MainGameScript extends SurfaceView implements SurfaceHolder.Callbac
                 otherPlayers = new Player[3];
                 gameState = 1;
                 nextGameState = 0;
+                Log.d("HandleGameStateChag", "DNSAKDAKD2");
                 break;
             //This happens when the play button is pressed
             case 2:
@@ -947,8 +990,8 @@ public class MainGameScript extends SurfaceView implements SurfaceHolder.Callbac
                     button.draw(canvas);
                 }
 
-                if (notificationsButton.isVisible)
-                    notificationsButton.draw(canvas);
+//                if (notificationsButton.isVisible)
+//                    notificationsButton.draw(canvas);
                 break;
             case 2:
                 player.draw(canvas);
@@ -1020,8 +1063,8 @@ public class MainGameScript extends SurfaceView implements SurfaceHolder.Callbac
                     }
                 }
 
-                if (notificationsButton.isVisible)
-                    notificationsButton.draw(canvas);
+//                if (notificationsButton.isVisible)
+//                    notificationsButton.draw(canvas);
                 break;
             case 4:
 
@@ -1031,8 +1074,8 @@ public class MainGameScript extends SurfaceView implements SurfaceHolder.Callbac
 
                 player.draw(canvas);
                 spawner.draw(canvas);
-                if (notificationsButton.isVisible)
-                    notificationsButton.draw(canvas);
+//                if (notificationsButton.isVisible)
+//                    notificationsButton.draw(canvas);
                 break;
             case 5:
                 logoBounceTimer += 1;
@@ -1051,8 +1094,8 @@ public class MainGameScript extends SurfaceView implements SurfaceHolder.Callbac
                 for (TextButton button: multiplayerMenuElements){
                     button.draw(canvas);
                 }
-                if (notificationsButton.isVisible)
-                    notificationsButton.draw(canvas);
+//                if (notificationsButton.isVisible)
+//                    notificationsButton.draw(canvas);
 
                 if (loadingIndicator.isVisible)
                     loadingIndicator.draw(canvas);

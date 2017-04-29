@@ -13,26 +13,22 @@ import java.util.Random;
  * Created by Bensas on 01/06/16. (june)
  */
 public class KillerHorizontalLine {
-
-    float startX, startY, currentEndX, currentEndY;
-    float speed, rate;
-
-    long ETA;
-
-    float[] endXs, endYs;
-    int updateIndex;
-
-    //startingSide: 0 is left, 1 is right --- direction: 0 is downwards, 1 is upwards
-    boolean startingSide, direction;
-
-    //0 means inactive, 1 means extending, 2 means exploding, 3 means hasExploded (post-explosion animation is playing)
-    int state;
-
     public Paint whitePaint = new Paint();
     public Paint redPaint = new Paint();
     public int alphaCounter = 0;
+    Spawner spawner;
+    float startX, startY, currentEndX, currentEndY;
+    float speed, rate;
+    long ETA;
+    float[] endXs, endYs;
+    int updateIndex;
+    //startingSide: 0 is left, 1 is right --- direction: 0 is downwards, 1 is upwards
+    boolean startingSide, direction;
+    //0 means inactive, 1 means extending, 2 means exploding, 3 means hasExploded (post-explosion animation is playing)
+    int state;
 
-    public KillerHorizontalLine (){
+    public KillerHorizontalLine (Spawner spawner){
+        this.spawner = spawner;
         state = 0;
 
         whitePaint.setColor(Color.WHITE);
@@ -55,10 +51,10 @@ public class KillerHorizontalLine {
         ETA = System.nanoTime() + (long)((long)(1000000000/60) * (Globals.GAME_WIDTH / speed));
 
         startY = playerY + rnd.nextInt(400) - 200;
-        if (startY > Globals.GAME_HEIGHT - Globals.BOUNDARY_WIDTH){
-            startY = Globals.GAME_HEIGHT - Globals.BOUNDARY_WIDTH;
-        } else if (startY < Globals.BOUNDARY_WIDTH){
-            startY = Globals.BOUNDARY_WIDTH;
+        if (startY > Globals.GAME_HEIGHT - Globals.BOUNDARY_WIDTH - 20){
+            startY = Globals.GAME_HEIGHT - Globals.BOUNDARY_WIDTH - 20;
+        } else if (startY < Globals.BOUNDARY_WIDTH + 20){
+            startY = Globals.BOUNDARY_WIDTH + 20;
         }
 
         float randomFloat = rnd.nextFloat();
@@ -76,8 +72,6 @@ public class KillerHorizontalLine {
                 endXs[i] = speed * i;
                 endYs[i] = rate * endXs[i] + startY;
             }
-            currentEndX = startX;
-            currentEndY = startY;
         } else {
             startX = Globals.GAME_WIDTH;
             endXs = new float[(int)(Globals.GAME_WIDTH / speed) + 10];
@@ -86,18 +80,18 @@ public class KillerHorizontalLine {
                 endXs[i] = startX - speed * i;
                 endYs[i] = rate * (Globals.GAME_WIDTH - endXs[i]) + startY;
             }
-            currentEndX = startX;
-            currentEndY = startY;
         }
-        Log.d(getClass().getCanonicalName(), "Horizontal Line - Rate: " + rate + " - Current time: " + System.nanoTime() + " - ETA: " + ETA);
+        currentEndY = startY;
+        currentEndX = startX;
 
+        Log.d(getClass().getCanonicalName(), "Horizontal Line - Rate: " + rate + " - Current time: " + System.nanoTime() + " - ETA: " + ETA);
 
         state = 1;
         alphaCounter = 0;
         updateIndex = 0;
     }
 
-    //This method allows manually setting of the attributes to create custom lines. It's used in the instructions menu.
+    //This method allows manually setting of the attributes to create custom lines. It's used in the instructions menu and in multiplayer mode.
     public void resetLineWithCustomAttributes(boolean startingSide, boolean direction,float speed, int startX, int startY, float rate){
         this.startingSide = startingSide;
         this.direction = direction;
@@ -113,8 +107,6 @@ public class KillerHorizontalLine {
                 endXs[i] = speed * i;
                 endYs[i] = rate * endXs[i] + startY;
             }
-            currentEndX = startX;
-            currentEndY = startY;
         } else {
             this.startY = startY;
             this.startX = Globals.GAME_WIDTH;
@@ -124,12 +116,39 @@ public class KillerHorizontalLine {
                 endXs[i] = startX - speed * i;
                 endYs[i] = rate * (Globals.GAME_WIDTH - endXs[i]) + startY;
             }
-            currentEndX = startX;
-            currentEndY = startY;
         }
+
+        if (spawner.mainGame.multiplayer) {
+            if (!spawner.firstLineLaunched){
+                currentEndX = endXs[0];
+                currentEndY = endYs[0];
+                spawner.resetTimer();
+                spawner.firstLineLaunched = true;
+            }else{
+                try{
+                    currentEndX = endXs[-spawner.timer];
+                    currentEndY = endYs[-spawner.timer];
+                    updateIndex = -spawner.timer;
+                } catch (ArrayIndexOutOfBoundsException e){
+                    Log.d("HorizontalLine", "Spawner timer does not fit array: " + spawner.timer);
+                    Log.d("HorizontalLine", "Array size: " + endXs.length);
+
+                    currentEndX = endXs[0];
+                    currentEndY = endYs[0];
+                }
+
+                spawner.resetTimer();
+            }
+
+        } else {
+            currentEndX = endXs[0];
+            currentEndY = endYs[0];
+            updateIndex = 0;
+        }
+
         state = 1;
         alphaCounter = 0;
-        updateIndex = 0;
+
     }
 
     public void update(){

@@ -19,19 +19,18 @@ import java.util.Random;
  * horizontal or vertical, the direction in which they explode, the speed at which they form, etc.
  */
 public class Spawner {
+    MainGameScript mainGame;
     Random rnd = new Random();
     KillerHorizontalLine[] horizontalLines = new KillerHorizontalLine[4];
     KillerVerticalLine[] verticalLines = new KillerVerticalLine[4];
     int vLineCount;
 
-    int lineBufferSize = 20, currentLineIndex;
-    boolean[] lineTypes, lineDirections, lineStartingSides;
-    float[] lineSpeeds, lineRates;
-    short[] lineStartPos;
+    boolean firstLineLaunched = false;
 
     int timer = 100, timerReduction = 30; //0= horizontal line, 1= vertical line
 
     public void update(int playerX, int playerY, MainGameScript mainGame){
+        this.mainGame = mainGame;
         timer -= 1;
         if (mainGame.gameState == 2){
             //Every one second, we spawn a line and reset the timer
@@ -157,17 +156,28 @@ public class Spawner {
         }
     }
 
-//    public void generateLineBuffer(){
-//        for (int i = 0; i< lineBufferSize; i++){
-//            if (rnd.nextBoolean()){
-//                //Log.d(getClass().getSimpleName(), "Generating Horizontal line...");
-//                checkForCloseHorizontalETAs(createHorizontalLine(playerY)), mainGame;
-//            } else {
-//                //Log.d(getClass().getSimpleName(), "Generating Vertical line...");
-//                checkForCloseVerticalETAs(createVerticalLine(playerX)), mainGame);
-//            }
-//        }
-//    }
+    public void resetTimer(){
+        timer = 100 - timerReduction;
+        timerReduction += 3;
+        Log.d(getClass().getSimpleName(), "Time reduction: " + timerReduction);
+
+        //We limit the timer reduction (This is when the player reached max difficulty)
+        if (timerReduction > 56){
+            //Log.d(getClass().getSimpleName(), "Max difficulty reached!");
+            if (vLineCount == 4){
+                for (int i = 0; i < verticalLines.length && vLineCount == 4; i++){
+                    if (verticalLines[i] != null){
+                        if (verticalLines[i].state == 0){
+                            verticalLines[i] = null;
+                            vLineCount = 3;
+                            Log.d("Spawnerr", "REMOVING ONE VERTICAL LINE");
+                        }
+                    }
+                }
+            }
+            timerReduction = 56;
+        }
+    }
 
     public KillerHorizontalLine createHorizontalLine(int playerY){
         for (KillerHorizontalLine line: horizontalLines){
@@ -303,8 +313,8 @@ public class Spawner {
 
     public void reset(){
         for (int i = 0; i < 4; i++){
-            verticalLines[i] = new KillerVerticalLine();
-            horizontalLines[i] = new KillerHorizontalLine();
+            verticalLines[i] = new KillerVerticalLine(this);
+            horizontalLines[i] = new KillerHorizontalLine(this);
         }
         vLineCount = 4;
         timerReduction = 0;
