@@ -805,7 +805,11 @@ public class LineMayhem extends Activity  implements GoogleApiClient.ConnectionC
     @Override
     public void onLeftRoom(int i, String s) {
         ((MainGameScript)gameView).loadingIndicator.isVisible = false;
-        mParticipants.clear();
+        try{
+            mParticipants.clear();
+        } catch(NullPointerException e){
+            e.printStackTrace();
+        }
     }
 
     @Override
