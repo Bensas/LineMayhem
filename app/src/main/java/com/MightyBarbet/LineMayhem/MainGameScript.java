@@ -2,6 +2,7 @@ package com.MightyBarbet.LineMayhem;
 
 import android.app.Activity;
 import android.content.Context;
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -11,6 +12,7 @@ import android.graphics.Paint;
 import android.graphics.PorterDuff;
 import android.media.MediaPlayer;
 import android.media.PlaybackParams;
+import android.net.Uri;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.KeyEvent;
@@ -69,7 +71,7 @@ public class MainGameScript extends SurfaceView implements SurfaceHolder.Callbac
     boolean hasBroadcastedPosition = false, hasBroadcastedFinalPosition = false;
     float scaleFactorX;
     float scaleFactorY;
-    TextButton[] mainMenuElements = new TextButton[6];
+    TextButton[] mainMenuElements = new TextButton[7];
     int logoBounceTimer = 0;
     ArrayList<TextButton> multiplayerMenuElements = new ArrayList<>();
     TextButton[] multiplayerGameOverMenuElements = new TextButton[12];
@@ -153,6 +155,8 @@ public class MainGameScript extends SurfaceView implements SurfaceHolder.Callbac
             mainMenuElements[4] = new TextButton(Globals.GAME_WIDTH/2, 975, 50, getResources().getString(R.string.button_highscores), Paint.Align.CENTER, true, 0, getContext());
             musicOn = sharedPrefs.getBoolean("MUSIC_ON", true);
             mainMenuElements[5] = new TextButton(Globals.GAME_WIDTH/2, 1125, 30, musicOn? "Music: ON" : "Music: OFF", Paint.Align.CENTER, true, 0, getContext());
+            mainMenuElements[6] = new TextButton(Globals.GAME_WIDTH/2 , 1245, 22, "©2014-2017 Mighty Barbet", Paint.Align.CENTER, true, 0, getContext()).setColor(Color.GRAY);
+
 
             multiplayerMenuElements.add(new TextButton(Globals.GAME_WIDTH/2 , 432, 25, getResources().getString(R.string.text_multiplayer_1), Paint.Align.CENTER, false, 0, getContext()).setColor(Color.YELLOW));
             multiplayerMenuElements.add(new TextButton(Globals.GAME_WIDTH/2 , 466, 25, getResources().getString(R.string.text_multiplayer_2), Paint.Align.CENTER, false, 0, getContext()).setColor(Color.YELLOW));
@@ -192,7 +196,7 @@ public class MainGameScript extends SurfaceView implements SurfaceHolder.Callbac
             multiplayerGameOverMenuElements[8] = new TextButton(Globals.GAME_WIDTH/2, 640, 38, "", Paint.Align.CENTER, false, 0, getContext());
             multiplayerGameOverMenuElements[9] = new TextButton(Globals.GAME_WIDTH/2, 640 + 60, 38, "", Paint.Align.CENTER, false, 0, getContext());
             multiplayerGameOverMenuElements[10] = new TextButton(Globals.GAME_WIDTH/2, 640 + 120, 38, "", Paint.Align.CENTER, false, 0, getContext());
-            multiplayerGameOverMenuElements[11] = new TextButton(Globals.GAME_WIDTH/2, 1250, 30, "Waiting for other players...", Paint.Align.CENTER, false, 0, getContext());
+            multiplayerGameOverMenuElements[11] = new TextButton(Globals.GAME_WIDTH/2, 1240, 30, "Waiting for other players...", Paint.Align.CENTER, false, 0, getContext());
 
 
             //notificationsButton = new NotificationsButton(context);
@@ -421,6 +425,10 @@ public class MainGameScript extends SurfaceView implements SurfaceHolder.Callbac
                 SharedPreferences.Editor prefEditor = sharedPrefs.edit();
                 prefEditor.putBoolean("MUSIC_ON", musicOn);
                 prefEditor.apply();
+            }
+            else if (button.text.equals("©2014-2017 Mighty Barbet")){
+                Intent browserIntent = new Intent(Intent.ACTION_VIEW, Uri.parse("http://www.mightybarbet.com"));
+                context.startActivity(browserIntent);
             }
             else if (button.text.equals("Quick Game")){
                 Log.d("dasdsa", "About to start quick game");

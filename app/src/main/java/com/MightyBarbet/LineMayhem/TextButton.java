@@ -50,7 +50,7 @@ public class TextButton {
 
     public void draw(Canvas canvas){
         //boundaries = new Rect(x - boundaries.width()/2, y - boundaries.height(), x + boundaries.width()/2, y);
-        if (isPressable){
+        if (isPressable && !text.equals("©2014-2017 Mighty Barbet")){
             paint.setStyle(Paint.Style.STROKE);
             paint.setColor(Color.RED);
             paint.setStrokeWidth(4);
@@ -63,6 +63,8 @@ public class TextButton {
         paint.setColor(color);
 
         //When the button is being pressed, it moves down a bit to indicate so.
+        if(text.equals("©2014-2017 Mighty Barbet"))
+            isPressed = 0;
         canvas.drawText(text, x, y + isPressed*12, paint);
     }
 
