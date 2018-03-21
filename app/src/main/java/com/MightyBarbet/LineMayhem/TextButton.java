@@ -23,6 +23,7 @@ public class TextButton {
     Rect boundaries;
     Paint paint;
     int color;
+    int tempAlpha;
     public TextButton(int x, int y, int fontSize, String text, Paint.Align alignment, boolean isPressable, int statePointer, Context context){
         defaultX = x;
         defaultY = y;
@@ -48,7 +49,42 @@ public class TextButton {
 
     }
 
+    public void updateBoundaries(){
+        boundaries = new Rect();
+        paint.getTextBounds(text, 0, text.length(), boundaries);
+        boundaries = new Rect(x - boundaries.width()/2, y - boundaries.height(), x + boundaries.width()/2, y);
+    }
+
     public void draw(Canvas canvas){
+        //boundaries = new Rect(x - boundaries.width()/2, y - boundaries.height(), x + boundaries.width()/2, y);
+        if (isPressable && !text.equals("©2014-2017 Mighty Barbet")){
+            paint.setStyle(Paint.Style.STROKE);
+
+            //Whenever we set the color, we are overwriting the alpha value, so we must back it up and restore it.
+            tempAlpha = paint.getAlpha();
+            paint.setColor(Color.RED);
+            paint.setAlpha(tempAlpha);
+
+            paint.setStrokeWidth(4);
+            canvas.drawRect(boundaries.left-16, boundaries.top-16 + isPressed*12, boundaries.right+16, boundaries.bottom+16 + isPressed*12, paint);
+            tempAlpha = paint.getAlpha();
+            paint.setColor(Color.WHITE);
+            paint.setAlpha(tempAlpha);
+            paint.setStrokeWidth(5);
+            canvas.drawRect(boundaries.left-20, boundaries.top-20 + isPressed*12, boundaries.right+20, boundaries.bottom+20 + isPressed*12, paint);
+        }
+        paint.setStyle(Paint.Style.FILL);
+        tempAlpha = paint.getAlpha();
+        paint.setColor(color);
+        paint.setAlpha(tempAlpha);
+
+        //When the button is being pressed, it moves down a bit to indicate so.
+        if(text.equals("©2014-2017 Mighty Barbet"))
+            isPressed = 0;
+        canvas.drawText(text, x, y + isPressed*12, paint);
+    }
+
+    public void draw(Canvas canvas, Paint paint){
         //boundaries = new Rect(x - boundaries.width()/2, y - boundaries.height(), x + boundaries.width()/2, y);
         if (isPressable && !text.equals("©2014-2017 Mighty Barbet")){
             paint.setStyle(Paint.Style.STROKE);

@@ -1,5 +1,6 @@
 package com.MightyBarbet.LineMayhem;
 
+import android.content.SharedPreferences;
 import android.graphics.Canvas;
 import android.media.AudioManager;
 import android.media.SoundPool;
@@ -28,9 +29,14 @@ public class Spawner {
     boolean firstLineLaunched = false;
 
     int timer = 100, timerReduction = 30; //0= horizontal line, 1= vertical line
-
-    public void update(int playerX, int playerY, MainGameScript mainGame){
+    int coinTimer = 300;
+    Coin coin;
+    public Spawner(MainGameScript mainGame){
         this.mainGame = mainGame;
+        coin = new Coin(mainGame);
+    }
+
+    public void update(int playerX, int playerY){
         timer -= 1;
         if (mainGame.gameState == 2){
             //Every one second, we spawn a line and reset the timer
@@ -43,8 +49,6 @@ public class Spawner {
                         //Log.d(getClass().getSimpleName(), "Generating Vertical line...");
                         broadcastVerticalLine(checkForCloseVerticalETAs(createVerticalLine(playerX)), mainGame);
                     }
-
-
                     //Each time we reset the timer, we set it lower than before
                     timer = 100 - timerReduction;
                     timerReduction += 3;
@@ -67,6 +71,23 @@ public class Spawner {
                         timerReduction = 56;
                     }
                 }
+            }
+
+
+            //Coin spawning/collection related code
+            coinTimer -= 1;
+            coin.update();
+            if (coinTimer <= 0 || coin.state == Coin.STATE_INVISIBLE){
+                Log.d("spawner.update()", "Spawnig coin...");
+                coin.x = Globals.BOUNDARY_WIDTH + 30 + rnd.nextInt(Globals.GAME_WIDTH - 2 * Globals.BOUNDARY_WIDTH - 30);
+                coin.y = Globals.BOUNDARY_WIDTH + 30 + rnd.nextInt(Globals.GAME_HEIGHT - 2 * Globals.BOUNDARY_WIDTH - 30);
+                coin.setState(Coin.STATE_APPEARING);
+
+                coinTimer = 300;
+            }
+            if (playerX > coin.x - 30 && playerX < coin.x + 30 && playerY > coin.y - 30 && playerY < coin.y + 30 && coin.state == Coin.STATE_IDLE){
+                coin.setState(Coin.STATE_COLLECTED);
+                mainGame.coinCount++;
             }
         }
         //We set a specific spawning pattern for the instructions menu
@@ -296,19 +317,18 @@ public class Spawner {
 
 
     public void draw(Canvas canvas){
-        //int counter = 0;
         for (KillerHorizontalLine line: horizontalLines){
             if (line != null)
                 line.draw(canvas);
             //Log.d("Spawner.draw()", "Drew line number " + counter + ". Rate: " + line.rate + ". State: " + line.state);
-            //counter++;
         }
         for (KillerVerticalLine line: verticalLines){
             if (line != null)
                 line.draw(canvas);
             //Log.d("Spawner.draw()", "Drew line number " + counter + ". Rate: " + line.rate + ". State: " + line.state);
-            //counter++;
         }
+        if (mainGame.player.isAlive)
+            coin.draw(canvas);
     }
 
     public void reset(){

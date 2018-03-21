@@ -3,6 +3,7 @@ package com.MightyBarbet.LineMayhem;
 import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.graphics.Paint;
 import android.media.PlaybackParams;
 import android.os.Bundle;
@@ -21,6 +22,10 @@ import android.widget.Toast;
 import com.google.android.gms.ads.AdListener;
 import com.google.android.gms.ads.AdRequest;
 import com.google.android.gms.ads.InterstitialAd;
+import com.google.android.gms.ads.MobileAds;
+import com.google.android.gms.ads.reward.RewardItem;
+import com.google.android.gms.ads.reward.RewardedVideoAd;
+import com.google.android.gms.ads.reward.RewardedVideoAdListener;
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.GooglePlayServicesUtil;
 import com.google.android.gms.common.api.GoogleApiClient;
@@ -48,7 +53,7 @@ import java.util.Set;
 
 public class LineMayhem extends Activity  implements GoogleApiClient.ConnectionCallbacks,
         GoogleApiClient.OnConnectionFailedListener, RealTimeMessageReceivedListener,
-        RoomStatusUpdateListener, RoomUpdateListener, OnInvitationReceivedListener {
+        RoomStatusUpdateListener, RoomUpdateListener, OnInvitationReceivedListener, RewardedVideoAdListener{
 
     final static String TAG = "LineMayhem_Activity";
     // Request codes for the UIs that we show with startActivityForResult:
@@ -57,9 +62,13 @@ public class LineMayhem extends Activity  implements GoogleApiClient.ConnectionC
     final static int RC_WAITING_ROOM = 10002;
     // Request code used to invoke sign in user interactions.
     private static final int RC_SIGN_IN = 9001;
+
     public FirebaseAnalytics firebaseClient;
+
     public InterstitialAd interstitialAd;
-      // Room ID where the currently active game is taking place; null if we're
+    public RewardedVideoAd mRewardedVideoAd;
+
+    // Room ID where the currently active game is taking place; null if we're
       // not playing.
       String mRoomId = null;
       // The participants in the currently active game
@@ -98,8 +107,10 @@ public class LineMayhem extends Activity  implements GoogleApiClient.ConnectionC
 
             if (GooglePlayServicesUtil.isGooglePlayServicesAvailable(this) == ConnectionResult.SUCCESS ||
                     GooglePlayServicesUtil.isGooglePlayServicesAvailable(this) == ConnectionResult.SIGN_IN_REQUIRED){
+
+                //Set up the interstitial ad
                 interstitialAd = new InterstitialAd(this);
-                interstitialAd.setAdUnitId("ca-app-pub-2704022189582580/5935884551");
+                interstitialAd.setAdUnitId("ca-app-pub-3940256099942544/5224354917");
                 interstitialAd.setAdListener(new AdListener() {
                     @Override
                     public void onAdClosed() {
@@ -108,6 +119,11 @@ public class LineMayhem extends Activity  implements GoogleApiClient.ConnectionC
 
                 });
                 requestNewInterstitial();
+
+                //Set up rewarded video ads
+                mRewardedVideoAd = MobileAds.getRewardedVideoAdInstance(this);
+                mRewardedVideoAd.setRewardedVideoAdListener(this);
+                loadRewardedVideoAd();
 
                 // Create the Google Api Client with access to the Play Games services
                 googleApiClient = new GoogleApiClient.Builder(this)
@@ -133,25 +149,6 @@ public class LineMayhem extends Activity  implements GoogleApiClient.ConnectionC
         } else {
             super.onBackPressed();
         }
-    }
-
-
-    public void showInterstitialAd(){
-        if (interstitialAd.isLoaded()){
-            try{
-                interstitialAd.show();
-            } catch (Exception e){
-                e.printStackTrace();
-            }
-        } else {
-            Log.d(getClass().getSimpleName(), "Interstitial ad couldn't be shown because it wasn't loaded :(");
-        }
-
-    }
-
-    private void requestNewInterstitial() {
-        AdRequest adRequest = new AdRequest.Builder().build();
-        interstitialAd.loadAd(adRequest);
     }
 
     @Override
@@ -245,20 +242,20 @@ public class LineMayhem extends Activity  implements GoogleApiClient.ConnectionC
         Log.d(TAG, "Starting quick game");
         Games.RealTimeMultiplayer.create(googleApiClient, rtmConfigBuilder.build());
         Log.d(TAG, "Quick game started");
-        ((MainGameScript)gameView).loadingIndicator.setButton(((MainGameScript)gameView).multiplayerMenuElements.get(2));
+        ((MainGameScript)gameView).loadingIndicator.setButton(((MainGameScript)gameView).multiplayerMenuElements[2]);
         ((MainGameScript)gameView).loadingIndicator.isVisible = true;
     }
 
     void invitePlayers(){
         Intent intent = Games.RealTimeMultiplayer.getSelectOpponentsIntent(googleApiClient, 1, 3);
-        ((MainGameScript)gameView).loadingIndicator.setButton(((MainGameScript)gameView).multiplayerMenuElements.get(3));
+        ((MainGameScript)gameView).loadingIndicator.setButton(((MainGameScript)gameView).multiplayerMenuElements[3]);
         ((MainGameScript)gameView).loadingIndicator.isVisible = true;
         startActivityForResult(intent, RC_SELECT_PLAYERS);
     }
 
     void viewInvites(){
         Intent intent = Games.Invitations.getInvitationInboxIntent(googleApiClient);
-        ((MainGameScript)gameView).loadingIndicator.setButton(((MainGameScript)gameView).multiplayerMenuElements.get(4));
+        ((MainGameScript)gameView).loadingIndicator.setButton(((MainGameScript)gameView).multiplayerMenuElements[4]);
         ((MainGameScript)gameView).loadingIndicator.isVisible = true;
         startActivityForResult(intent, RC_INVITATION_INBOX);
     }
@@ -951,6 +948,78 @@ public class LineMayhem extends Activity  implements GoogleApiClient.ConnectionC
         }
 
         buffer.clear();
+    }
+
+    //
+    // ADMOB METHODS
+    //
+
+    public void showInterstitialAd(){
+        if (interstitialAd.isLoaded()){
+            try{
+                interstitialAd.show();
+            } catch (Exception e){
+                e.printStackTrace();
+            }
+        } else {
+            Log.d(getClass().getSimpleName(), "Interstitial ad couldn't be shown because it wasn't loaded :(");
+        }
+
+    }
+
+    private void requestNewInterstitial() {
+        AdRequest adRequest = new AdRequest.Builder().build();
+        interstitialAd.loadAd(adRequest);
+    }
+
+    public void loadRewardedVideoAd() {
+//        mRewardedVideoAd.loadAd("ca-app-pub-2704022189582580/5352974000",
+//                new AdRequest.Builder().build());
+        mRewardedVideoAd.loadAd("ca-app-pub-3940256099942544/5224354917",
+                new AdRequest.Builder().build());
+
+    }
+
+    @Override
+    public void onRewardedVideoAdLoaded() {
+
+    }
+
+    @Override
+    public void onRewardedVideoAdOpened() {
+
+    }
+
+    @Override
+    public void onRewardedVideoStarted() {
+
+    }
+
+    @Override
+    public void onRewardedVideoAdClosed() {
+        // Load the next rewarded video ad.
+        loadRewardedVideoAd();
+    }
+
+    @Override
+    public void onRewarded(RewardItem rewardItem) {
+        SharedPreferences prefs = getSharedPreferences("GAME_PREFERENCES", Context.MODE_PRIVATE);
+        ((MainGameScript)gameView).coinCount += 40;
+        SharedPreferences.Editor prefEditor = prefs.edit();
+        prefEditor.putInt("COIN_COUNT", ((MainGameScript)gameView).coinCount);
+        prefEditor.apply();
+        prefEditor.commit();
+        ((MainGameScript)gameView).updateCoinCounts();
+    }
+
+    @Override
+    public void onRewardedVideoAdLeftApplication() {
+
+    }
+
+    @Override
+    public void onRewardedVideoAdFailedToLoad(int i) {
+
     }
 //TODO: BELOW
 //    public void checkInvites()

@@ -13,7 +13,7 @@ import android.util.Log;
  */
 public class Player extends GameObject{
     public int radius = 10, fadeoutCounter;
-    public Bitmap skin;
+    public Skin skin;
     //These booleans are for multiplayer games.
     public boolean isAlive = true, hasExploded = false, isReady = false;
     String id, ign;
@@ -33,18 +33,20 @@ public class Player extends GameObject{
         nameTag.setColor(Color.parseColor(colorStr));
         setSkin(colorStr);
         paint.setStyle(Paint.Style.FILL);
-        skin = BitmapFactory.decodeResource(context.getResources(), R.drawable.skin_arrow);
+        skin = null;
 
         x = Globals.GAME_WIDTH / 2;
         y = Globals.GAME_HEIGHT / 2;
-
-        width = 2 * radius;
-        height = 2 * radius;
+//
+//        width = 2 * radius;
+//        height = 2 * radius;
     }
 
     public void setSkin(String skinString){
+        skin = null;
         paint.setColor(Color.parseColor(skinString));
     }
+    public void setSkin(Skin skin){this.skin = skin;}
 
     //MovePlayer method takes swypeDelta values from the main script and modifies the speed based on it.
     public void movePlayer(float deltaX, float deltaY){
@@ -70,6 +72,7 @@ public class Player extends GameObject{
         y += speedY;
 
         radius = (int)(10 + (Math.abs(speedX) + Math.abs(speedY))/40);
+        //Log.d("Player.update()", "Current radius: " + radius);
         nameTag.x = x;
         nameTag.y = y - 32;
         //System.out.println(x + " - " + y);
@@ -77,8 +80,14 @@ public class Player extends GameObject{
 
     //Draw method
     public void draw(Canvas canvas){
-        //canvas.drawBitmap(skinArrow, x-skinArrow.getWidth()/2, y-skinArrow.getHeight()/2, paint);
-        canvas.drawCircle(x, y, radius, paint);
+        if (skin != null){
+            canvas.save();
+            canvas.scale(radius/10f, radius/10f, x, y);
+            canvas.drawBitmap(skin.bitmap, x-skin.bitmap.getWidth()/2, y-skin.bitmap.getHeight()/2, paint);
+            canvas.restore();
+        } else {
+            canvas.drawCircle(x, y, radius, paint);
+        }
     }
 
     public void reset(){

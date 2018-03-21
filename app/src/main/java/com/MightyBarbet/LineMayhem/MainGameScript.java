@@ -45,12 +45,16 @@ import java.util.Random;
  */
 public class MainGameScript extends SurfaceView implements SurfaceHolder.Callback{
 
-    private final static String LEADERBOARD_ID = "CgkIlaKbopsaEAIQAA";
+    public static final int STATUS_UNOWNED = 0, STATUS_OWNED = 1;
+    private final static String LEADERBOARD_HIGHSCORES_ID = "CgkIlaKbopsaEAIQAA", LEADERBOARD_COINCOUNTS_ID = "CgkIlaKbopsaEAIQCQ";
+    private final static String LEADERBOARD_OWNED_SKINS_1_ID = "CgkIlaKbopsaEAIQDA",
+            LEADERBOARD_OWNED_SKINS_2_ID = "CgkIlaKbopsaEAIQDQ",
+            LEADERBOARD_OWNED_SKINS_3_ID = "CgkIlaKbopsaEAIQDg",
+            LEADERBOARD_OWNED_SKINS_4_ID = "CgkIlaKbopsaEAIQDw",
+            LEADERBOARD_OWNED_SKINS_5_ID = "CgkIlaKbopsaEAIQEA";
     public LineMayhem context;
     public MediaPlayer mediaPlayer;
-    public int fadeoutCounter = 0;
     public boolean musicOn = true;
-
     public GoogleApiClient googleApiClient;
     public Player player;
     public Player[] otherPlayers;
@@ -62,7 +66,7 @@ public class MainGameScript extends SurfaceView implements SurfaceHolder.Callbac
     //If this device is the host, then it must send the line information to the rest of the players,
     //not just it's current position
     public boolean isHost = false;
-    //GameState variable: 1 = main menu, 2 = in game, 3 = end game screen, 4 = instructions page 1, 5 = multiplayer menu;
+    //GameState variable: 1 = main menu, 2 = in game, 3 = end game screen, 4 = instructions page 1, 5 = multiplayer menu, 6 = store;
     public int gameState = 1, nextGameState = 0, gameStateTimer = Globals.GAME_HEIGHT + 200;
     // Message buffer for sending position message and new line message
     byte[] mMsgBuf;
@@ -71,26 +75,81 @@ public class MainGameScript extends SurfaceView implements SurfaceHolder.Callbac
     boolean hasBroadcastedPosition = false, hasBroadcastedFinalPosition = false;
     float scaleFactorX;
     float scaleFactorY;
-    TextButton[] mainMenuElements = new TextButton[7];
+    TextButton[] mainMenuElements = new TextButton[9];
     int logoBounceTimer = 0;
-    ArrayList<TextButton> multiplayerMenuElements = new ArrayList<>();
+    TextButton score;
+    int highscore;
+    int coinCount, coinCountDigits;
+    TextButton[] multiplayerMenuElements = new TextButton[5];
     TextButton[] multiplayerGameOverMenuElements = new TextButton[12];
-    TextButton[] gameOverMenuElements = new TextButton[8];
+    TextButton[] gameOverMenuElements = new TextButton[9];
     int interstitialAdCounter;
-    ArrayList<TextButton> instructionsMenuElements = new ArrayList<>();
+    TextButton[] instructionsMenuElements = new TextButton[6];
     int instructionsAnimationTimer;
     Paint instructionsMenuPaint;
-    TextButton score;
+    ArrayList<TextButton> storeMenuElements = new ArrayList<TextButton>();
+    Skin[] skins = new Skin[]{
+            new Skin("Classic", Bitmap.createScaledBitmap(BitmapFactory.decodeResource(getResources(), R.drawable.classic), 22, 22, false), 15),
+            new Skin("Blue Boi", Bitmap.createScaledBitmap(BitmapFactory.decodeResource(getResources(), R.drawable.blue), 22, 22, false), 15),
+            new Skin("Red Boi", Bitmap.createScaledBitmap(BitmapFactory.decodeResource(getResources(), R.drawable.red1), 22, 22, false), 15),
+            new Skin("Magenta Boi", Bitmap.createScaledBitmap(BitmapFactory.decodeResource(getResources(), R.drawable.magenta), 22, 22, false), 15),
+            new Skin("Cyan Boi", Bitmap.createScaledBitmap(BitmapFactory.decodeResource(getResources(), R.drawable.cyan), 22, 22, false), 15),
+            new Skin("Yellow Boi", Bitmap.createScaledBitmap(BitmapFactory.decodeResource(getResources(), R.drawable.yellow), 22, 22, false), 15),
+            new Skin("Green Boi", Bitmap.createScaledBitmap(BitmapFactory.decodeResource(getResources(), R.drawable.green), 22, 22, false), 15),
+
+            new Skin("Blue Circle", Bitmap.createScaledBitmap(BitmapFactory.decodeResource(getResources(), R.drawable.circle_blue),  22, 22, false), 15),
+            new Skin("Red Circle", Bitmap.createScaledBitmap(BitmapFactory.decodeResource(getResources(), R.drawable.circle_red),  22, 22, false), 15),
+            new Skin("Magenta Circle", Bitmap.createScaledBitmap(BitmapFactory.decodeResource(getResources(), R.drawable.circle_magenta),  22, 22, false), 15),
+            new Skin("Cyan Circle", Bitmap.createScaledBitmap(BitmapFactory.decodeResource(getResources(), R.drawable.circle_cyan),  22, 22, false), 10),
+            new Skin("Yellow Circle", Bitmap.createScaledBitmap(BitmapFactory.decodeResource(getResources(), R.drawable.circle_yellow),  22, 22, false), 15),
+            new Skin("Green Circle", Bitmap.createScaledBitmap(BitmapFactory.decodeResource(getResources(), R.drawable.circle_green),  22, 22, false), 15),
+            new Skin("White Circle", Bitmap.createScaledBitmap(BitmapFactory.decodeResource(getResources(), R.drawable.circle_white),  22, 22, false), 15),
+
+            new Skin("Blue Crosshairs", Bitmap.createScaledBitmap(BitmapFactory.decodeResource(getResources(), R.drawable.crosshairs_blue),  22, 22, false), 20),
+            new Skin("Red Crosshairs", Bitmap.createScaledBitmap(BitmapFactory.decodeResource(getResources(), R.drawable.crosshairs_red),  22, 22, false), 20),
+            new Skin("Magenta Crosshairs", Bitmap.createScaledBitmap(BitmapFactory.decodeResource(getResources(), R.drawable.crosshairs_magenta),  22, 22, false), 20),
+            new Skin("Cyan Crosshairs", Bitmap.createScaledBitmap(BitmapFactory.decodeResource(getResources(), R.drawable.crosshairs_cyan),  22, 22, false), 20),
+            new Skin("Yellow Crosshairs", Bitmap.createScaledBitmap(BitmapFactory.decodeResource(getResources(), R.drawable.crosshairs_yellow),  22, 22, false), 20),
+            new Skin("Green Crosshairs", Bitmap.createScaledBitmap(BitmapFactory.decodeResource(getResources(), R.drawable.crosshairs_green),  22, 22, false), 20),
+            new Skin("White Crosshairs", Bitmap.createScaledBitmap(BitmapFactory.decodeResource(getResources(), R.drawable.crosshairs_white),  22, 22, false), 20),
+
+            new Skin("Blue-Magenta Crosshairs", Bitmap.createScaledBitmap(BitmapFactory.decodeResource(getResources(), R.drawable.crosshairs_blue_magenta),  22, 22, false), 50),
+            new Skin("Green-Blue Crosshairs", Bitmap.createScaledBitmap(BitmapFactory.decodeResource(getResources(), R.drawable.crosshairs_green_blue),  22, 22, false), 50),
+            new Skin("Magenta-Yellow Crosshairs", Bitmap.createScaledBitmap(BitmapFactory.decodeResource(getResources(), R.drawable.crosshairs_magenta_yellow),  22, 22, false), 50),
+            new Skin("Red-Cyan Crosshairs", Bitmap.createScaledBitmap(BitmapFactory.decodeResource(getResources(), R.drawable.crosshairs_red_cyan),  22, 22, false), 50),
+            new Skin("Red-Green Crosshairs", Bitmap.createScaledBitmap(BitmapFactory.decodeResource(getResources(), R.drawable.crosshairs_red_green),  22, 22, false), 50),
+            new Skin("White-Yellow Crosshairs", Bitmap.createScaledBitmap(BitmapFactory.decodeResource(getResources(), R.drawable.crosshairs_white_yellow),  22, 22, false), 50),
+
+            new Skin("Blue-Yellow Target", Bitmap.createScaledBitmap(BitmapFactory.decodeResource(getResources(), R.drawable.target_blue_yellow),  22, 22, false), 100),
+            new Skin("Blue-Green Target", Bitmap.createScaledBitmap(BitmapFactory.decodeResource(getResources(), R.drawable.target_blue_green),  22, 22, false), 100),
+            new Skin("White-Red Target", Bitmap.createScaledBitmap(BitmapFactory.decodeResource(getResources(), R.drawable.target_white_red),  22, 22, false), 100),
+            new Skin("Yellow-Red Target", Bitmap.createScaledBitmap(BitmapFactory.decodeResource(getResources(), R.drawable.target_yellow_red),  22, 22, false), 100),
+            new Skin("Blue_Yellow Target", Bitmap.createScaledBitmap(BitmapFactory.decodeResource(getResources(), R.drawable.target_blue_yellow),  22, 22, false), 100),
+
+            new Skin("Football", Bitmap.createScaledBitmap(BitmapFactory.decodeResource(getResources(), R.drawable.football),  22, 22, false), 200),
+            new Skin("Happy", Bitmap.createScaledBitmap(BitmapFactory.decodeResource(getResources(), R.drawable.happy),  22, 22, false), 200),
+            new Skin("Rainbow", Bitmap.createScaledBitmap(BitmapFactory.decodeResource(getResources(), R.drawable.rainbow),  22, 22, false), 200)
+    };
+    ArrayList<Integer> ownedSkins = new ArrayList<>();
+    Skin currentSkin;
+    int storeScrollOffset = 0, lastScrollPosition;
+    boolean scrolling = false;
+    int scrolledButtonPosition;
+
     LoadingIndicator loadingIndicator;
     //NotificationsButton notificationsButton;
     ArrayList<Notification> notifications;
     int nameTagDisplayTimer = 300;
     boolean gameOverScreenReady = false;
     private MainThread thread;
+
     //Variables for swipe interpretation
     private float swipeStartX, swipeStartY, swipeDeltaX, swipeDeltaY, swipeDeltaTime;
+
     private Bitmap logoBitmap;
     private Paint logoPaint;
+    private Bitmap coinBitmap;
+    private Bitmap getCoinsBitmap;
     private Boundaries boundaries;
 
     //MainScript constructor
@@ -108,6 +167,10 @@ public class MainGameScript extends SurfaceView implements SurfaceHolder.Callbac
         logoBitmap = Bitmap.createScaledBitmap(BitmapFactory.decodeResource(getResources(), R.drawable.logo), 720, 352, false);
         logoPaint = new Paint();
 
+        coinBitmap = Bitmap.createScaledBitmap(BitmapFactory.decodeResource(getResources(), R.drawable.barbet_coin_100), 35, 35, false);
+
+        getCoinsBitmap = Bitmap.createScaledBitmap(BitmapFactory.decodeResource(getResources(), R.drawable.get_coins_button1), 130, 80, false);
+
         mediaPlayer = MediaPlayer.create(context, R.raw.music);
         mediaPlayer.setLooping(true);
     }
@@ -122,7 +185,7 @@ public class MainGameScript extends SurfaceView implements SurfaceHolder.Callbac
                 e.printStackTrace();
             }
 
-            Games.Leaderboards.loadCurrentPlayerLeaderboardScore(googleApiClient, LEADERBOARD_ID, LeaderboardVariant.TIME_SPAN_ALL_TIME, LeaderboardVariant.COLLECTION_PUBLIC).setResultCallback(new ResultCallback<Leaderboards.LoadPlayerScoreResult>() {
+            Games.Leaderboards.loadCurrentPlayerLeaderboardScore(googleApiClient, LEADERBOARD_HIGHSCORES_ID, LeaderboardVariant.TIME_SPAN_ALL_TIME, LeaderboardVariant.COLLECTION_PUBLIC).setResultCallback(new ResultCallback<Leaderboards.LoadPlayerScoreResult>() {
                 @Override
                 public void onResult(Leaderboards.LoadPlayerScoreResult arg0) {
                     if (arg0.getScore() != null){
@@ -134,43 +197,64 @@ public class MainGameScript extends SurfaceView implements SurfaceHolder.Callbac
                             prefEditor.apply();
                             prefEditor.commit();
                         } else {
-                            Games.Leaderboards.submitScore(googleApiClient, LEADERBOARD_ID, sharedPrefs.getInt("HIGH_SCORE", 0));
+                            Games.Leaderboards.submitScore(googleApiClient, LEADERBOARD_HIGHSCORES_ID, sharedPrefs.getInt("HIGH_SCORE", 0));
                         }
                     }
                 }
             });
-            Games.Leaderboards.loadCurrentPlayerLeaderboardScore(googleApiClient, LEADERBOARD_ID, LeaderboardVariant.TIME_SPAN_ALL_TIME, LeaderboardVariant.COLLECTION_PUBLIC);
+            Games.Leaderboards.loadCurrentPlayerLeaderboardScore(googleApiClient, LEADERBOARD_HIGHSCORES_ID, LeaderboardVariant.TIME_SPAN_ALL_TIME, LeaderboardVariant.COLLECTION_PUBLIC);
 
+            Games.Leaderboards.loadCurrentPlayerLeaderboardScore(googleApiClient, LEADERBOARD_COINCOUNTS_ID, LeaderboardVariant.TIME_SPAN_ALL_TIME, LeaderboardVariant.COLLECTION_PUBLIC).setResultCallback(new ResultCallback<Leaderboards.LoadPlayerScoreResult>() {
+                @Override
+                public void onResult(Leaderboards.LoadPlayerScoreResult arg0) {
+                    if (arg0.getScore() != null){
+                        SharedPreferences sharedPrefs = context.getSharedPreferences("GAME_PREFERENCES", Context.MODE_PRIVATE);
+                        SharedPreferences.Editor prefEditor = sharedPrefs.edit();
+                        if (sharedPrefs.getInt("COIN_COUNT", -999) == -999){ //If there is no coin count saved in SharedPreferences, we set the coinCount to that on Play Games
+                            prefEditor.putInt("COIN_COUNT", (int)arg0.getScore().getRawScore());
+                            prefEditor.apply();
+                            prefEditor.commit();
+                            updateCoinCounts();
+                        } else {
+                            Games.Leaderboards.submitScore(googleApiClient, LEADERBOARD_HIGHSCORES_ID, sharedPrefs.getInt("COIN_COUNT", 0));
+                        }
+                    }
+                }
+            });
+            Games.Leaderboards.loadCurrentPlayerLeaderboardScore(googleApiClient, LEADERBOARD_COINCOUNTS_ID, LeaderboardVariant.TIME_SPAN_ALL_TIME, LeaderboardVariant.COLLECTION_PUBLIC);
             scaleFactorX = getWidth()/(Globals.GAME_WIDTH * 1.0f);
             scaleFactorY = getHeight() / (Globals.GAME_HEIGHT * 1.0f);
 
             SharedPreferences sharedPrefs = context.getSharedPreferences("GAME_PREFERENCES", Context.MODE_PRIVATE);
 
-            int highscore = sharedPrefs.getInt("HIGH_SCORE", 0);
+            highscore = sharedPrefs.getInt("HIGH_SCORE", 0);
+            coinCount = sharedPrefs.getInt("COIN_COUNT", 0);
+            coinCountDigits = getNumberOfDigits(coinCount);
             Log.d("surfaceCreated", "storedHighscore: " + highscore);
             mainMenuElements[0] = new TextButton(Globals.GAME_WIDTH/2 , 430, 35, "Highscore: " + highscore , Paint.Align.CENTER, false, 0, getContext());
-            mainMenuElements[1] = new TextButton(Globals.GAME_WIDTH/2, 600, 50, getResources().getString(R.string.button_play), Paint.Align.CENTER, true, 2, getContext());
-            mainMenuElements[2] = new TextButton(Globals.GAME_WIDTH/2, 725, 50, getResources().getString(R.string.button_multiplayer), Paint.Align.CENTER, true, 5, getContext());
-            mainMenuElements[3] = new TextButton(Globals.GAME_WIDTH/2, 850, 50, getResources().getString(R.string.button_instructions), Paint.Align.CENTER, true, 4, getContext());
-            mainMenuElements[4] = new TextButton(Globals.GAME_WIDTH/2, 975, 50, getResources().getString(R.string.button_highscores), Paint.Align.CENTER, true, 0, getContext());
+            mainMenuElements[1] = new TextButton(Globals.GAME_WIDTH/2 , 475, 35, String.valueOf(coinCount) , Paint.Align.CENTER, false, 0, getContext());
+            mainMenuElements[2] = new TextButton(Globals.GAME_WIDTH/2, 585, 50, getResources().getString(R.string.button_play), Paint.Align.CENTER, true, 2, getContext());
+            mainMenuElements[3] = new TextButton(Globals.GAME_WIDTH/2, 710, 50, getResources().getString(R.string.button_multiplayer), Paint.Align.CENTER, true, 5, getContext());
+            mainMenuElements[4] = new TextButton(Globals.GAME_WIDTH/2, 835, 50, getResources().getString(R.string.button_instructions), Paint.Align.CENTER, true, 4, getContext());
+            mainMenuElements[5] = new TextButton(Globals.GAME_WIDTH/2, 960, 50, getResources().getString(R.string.button_highscores), Paint.Align.CENTER, true, 0, getContext());
+            mainMenuElements[6] = new TextButton(Globals.GAME_WIDTH/2, 1085, 50, getResources().getString(R.string.button_store), Paint.Align.CENTER, true, 6, getContext());
             musicOn = sharedPrefs.getBoolean("MUSIC_ON", true);
-            mainMenuElements[5] = new TextButton(Globals.GAME_WIDTH/2, 1125, 30, musicOn? "Music: ON" : "Music: OFF", Paint.Align.CENTER, true, 0, getContext());
-            mainMenuElements[6] = new TextButton(Globals.GAME_WIDTH/2 , 1245, 22, "©2014-2017 Mighty Barbet", Paint.Align.CENTER, true, 0, getContext()).setColor(Color.GRAY);
+            mainMenuElements[7] = new TextButton(Globals.GAME_WIDTH/2, 1175, 25, musicOn? "Music: ON" : "Music: OFF", Paint.Align.CENTER, true, 0, getContext());
+            mainMenuElements[8] = new TextButton(Globals.GAME_WIDTH/2 , 1245, 22, "©2014-2017 Mighty Barbet", Paint.Align.CENTER, true, 0, getContext()).setColor(Color.GRAY);
 
 
-            multiplayerMenuElements.add(new TextButton(Globals.GAME_WIDTH/2 , 432, 25, getResources().getString(R.string.text_multiplayer_1), Paint.Align.CENTER, false, 0, getContext()).setColor(Color.YELLOW));
-            multiplayerMenuElements.add(new TextButton(Globals.GAME_WIDTH/2 , 466, 25, getResources().getString(R.string.text_multiplayer_2), Paint.Align.CENTER, false, 0, getContext()).setColor(Color.YELLOW));
-            multiplayerMenuElements.add(new TextButton(Globals.GAME_WIDTH/2, 600, 50, getResources().getString(R.string.button_quick_game), Paint.Align.CENTER, true, 0, getContext()));
-            multiplayerMenuElements.add(new TextButton(Globals.GAME_WIDTH/2, 850, 50, getResources().getString(R.string.button_invite_players), Paint.Align.CENTER, true, 0, getContext()));
-            multiplayerMenuElements.add(new TextButton(Globals.GAME_WIDTH/2, 1100, 50, getResources().getString(R.string.button_my_invites), Paint.Align.CENTER, true, 0, getContext()));
+            multiplayerMenuElements[0] = new TextButton(Globals.GAME_WIDTH/2 , 432, 25, getResources().getString(R.string.text_multiplayer_1), Paint.Align.CENTER, false, 0, getContext()).setColor(Color.YELLOW);
+            multiplayerMenuElements[1] = new TextButton(Globals.GAME_WIDTH/2 , 466, 25, getResources().getString(R.string.text_multiplayer_2), Paint.Align.CENTER, false, 0, getContext()).setColor(Color.YELLOW);
+            multiplayerMenuElements[2] = new TextButton(Globals.GAME_WIDTH/2, 600, 50, getResources().getString(R.string.button_quick_game), Paint.Align.CENTER, true, 0, getContext());
+            multiplayerMenuElements[3] = new TextButton(Globals.GAME_WIDTH/2, 850, 50, getResources().getString(R.string.button_invite_players), Paint.Align.CENTER, true, 0, getContext());
+            multiplayerMenuElements[4] = new TextButton(Globals.GAME_WIDTH/2, 1100, 50, getResources().getString(R.string.button_my_invites), Paint.Align.CENTER, true, 0, getContext());
 
-
-            instructionsMenuElements.add(new TextButton(Globals.GAME_WIDTH/2, 100, 60, getResources().getString(R.string.button_instructions) + ":", Paint.Align.CENTER, false, 0, getContext()));
-            instructionsMenuElements.add(new TextButton(Globals.GAME_WIDTH/2, 250, 32, getResources().getString(R.string.text_instructions1), Paint.Align.CENTER, false, 0, getContext()));
-            instructionsMenuElements.add(new TextButton(Globals.GAME_WIDTH/2, 300, 32, getResources().getString(R.string.text_instructions12), Paint.Align.CENTER, false, 0, getContext()));
-            instructionsMenuElements.add(new TextButton(Globals.GAME_WIDTH/2, 950, 32, getResources().getString(R.string.text_instructions2), Paint.Align.CENTER, false, 0, getContext()));
-            instructionsMenuElements.add(new TextButton(Globals.GAME_WIDTH/2, 1000, 35, getResources().getString(R.string.text_instructions3), Paint.Align.CENTER, false, 0, getContext()));
-            instructionsMenuElements.add(new TextButton(Globals.GAME_WIDTH/2, 1150, 60, getResources().getString(R.string.button_play), Paint.Align.CENTER, true, 2, getContext()));
+            instructionsMenuElements[0] = new TextButton(Globals.GAME_WIDTH/2, 100, 60, getResources().getString(R.string.button_instructions) + ":", Paint.Align.CENTER, false, 0, getContext());
+            instructionsMenuElements[1] = new TextButton(Globals.GAME_WIDTH/2, 250, 32, getResources().getString(R.string.text_instructions1), Paint.Align.CENTER, false, 0, getContext());
+            instructionsMenuElements[2] = new TextButton(Globals.GAME_WIDTH/2, 300, 32, getResources().getString(R.string.text_instructions12), Paint.Align.CENTER, false, 0, getContext());
+            instructionsMenuElements[3] = new TextButton(Globals.GAME_WIDTH/2, 950, 32, getResources().getString(R.string.text_instructions2), Paint.Align.CENTER, false, 0, getContext());
+            instructionsMenuElements[4] = new TextButton(Globals.GAME_WIDTH/2, 1000, 35, getResources().getString(R.string.text_instructions3), Paint.Align.CENTER, false, 0, getContext());
+            instructionsMenuElements[5] = new TextButton(Globals.GAME_WIDTH/2, 1150, 60, getResources().getString(R.string.button_play), Paint.Align.CENTER, true, 2, getContext());
             instructionsMenuPaint = new Paint();
             instructionsMenuPaint.setColor(Color.WHITE);
             instructionsMenuPaint.setStyle(Paint.Style.FILL);
@@ -179,16 +263,17 @@ public class MainGameScript extends SurfaceView implements SurfaceHolder.Callbac
             gameOverMenuElements[0] = new TextButton(Globals.GAME_WIDTH/2, 220, 120, "GAME", Paint.Align.CENTER, false, 0, getContext());
             gameOverMenuElements[1] = new TextButton(Globals.GAME_WIDTH/2, 350, 120, "OVER", Paint.Align.CENTER, false, 0, getContext());
             gameOverMenuElements[2] = new TextButton(Globals.GAME_WIDTH/2, 500, 50, "You survived", Paint.Align.CENTER, false, 0, getContext());
-            gameOverMenuElements[3] = new TextButton(Globals.GAME_WIDTH/2, 595, 65, "0", Paint.Align.CENTER, false, 6, getContext()); //*NatGeo voice* The score element is distinguished by it's unlikely statePointer
+            gameOverMenuElements[3] = new TextButton(Globals.GAME_WIDTH/2, 595, 65, "0", Paint.Align.CENTER, false, 100, getContext()); //*NatGeo voice* The score element is distinguished by it's unlikely statePointer (used in draw() method)
             gameOverMenuElements[4] = new TextButton(Globals.GAME_WIDTH/2, 680, 50, "killer Lines!", Paint.Align.CENTER, false, 0, getContext());
-            gameOverMenuElements[5] = new TextButton(Globals.GAME_WIDTH/2, 865, 50, getResources().getString(R.string.button_highscores), Paint.Align.CENTER, true, 0, getContext());
-            gameOverMenuElements[6] = new TextButton(Globals.GAME_WIDTH/2, 1000, 70, "Play Again", Paint.Align.CENTER, true, 2, getContext());
-            gameOverMenuElements[7] = new TextButton(Globals.GAME_WIDTH/2, 1150, 70, "Main Menu", Paint.Align.CENTER, true, 1, getContext());
+            gameOverMenuElements[5] = new TextButton(Globals.GAME_WIDTH/2 , 755, 35, String.valueOf(coinCount) , Paint.Align.CENTER, false, 0, getContext());
+            gameOverMenuElements[6] = new TextButton(Globals.GAME_WIDTH/2, 865, 50, getResources().getString(R.string.button_highscores), Paint.Align.CENTER, true, 0, getContext());
+            gameOverMenuElements[7] = new TextButton(Globals.GAME_WIDTH/2, 1000, 70, "Play Again", Paint.Align.CENTER, true, 2, getContext());
+            gameOverMenuElements[8] = new TextButton(Globals.GAME_WIDTH/2, 1150, 70, "Main Menu", Paint.Align.CENTER, true, 1, getContext());
 
             multiplayerGameOverMenuElements[0] = new TextButton(Globals.GAME_WIDTH/2, 200, 120, "GAME", Paint.Align.CENTER, false, 0, getContext());
             multiplayerGameOverMenuElements[1] = new TextButton(Globals.GAME_WIDTH/2, 330, 120, "OVER", Paint.Align.CENTER, false, 0, getContext());
             multiplayerGameOverMenuElements[2] = new TextButton(Globals.GAME_WIDTH/2, 430, 40, "You survived", Paint.Align.CENTER, false, 0, getContext());
-            multiplayerGameOverMenuElements[3] = new TextButton(Globals.GAME_WIDTH/2, 520, 55, "0", Paint.Align.CENTER, false, 6, getContext()); //*NatGeo voice* The score element is distinguished by it's unlikely statePointer
+            multiplayerGameOverMenuElements[3] = new TextButton(Globals.GAME_WIDTH/2, 520, 55, "0", Paint.Align.CENTER, false, 100, getContext()); //*NatGeo voice* The score element is distinguished by it's unlikely statePointer (used in draw() method)
             multiplayerGameOverMenuElements[4] = new TextButton(Globals.GAME_WIDTH/2, 590, 40, "killer Lines!", Paint.Align.CENTER, false, 0, getContext());
             multiplayerGameOverMenuElements[5] = new TextButton(Globals.GAME_WIDTH/2, 865, 50, getResources().getString(R.string.button_highscores), Paint.Align.CENTER, true, 0, getContext());
             multiplayerGameOverMenuElements[6] = new TextButton(Globals.GAME_WIDTH/2, 1000, 60, getResources().getString(R.string.button_ready), Paint.Align.CENTER, true, 0, getContext());
@@ -198,6 +283,30 @@ public class MainGameScript extends SurfaceView implements SurfaceHolder.Callbac
             multiplayerGameOverMenuElements[10] = new TextButton(Globals.GAME_WIDTH/2, 640 + 120, 38, "", Paint.Align.CENTER, false, 0, getContext());
             multiplayerGameOverMenuElements[11] = new TextButton(Globals.GAME_WIDTH/2, 1240, 30, "Waiting for other players...", Paint.Align.CENTER, false, 0, getContext());
 
+            storeMenuElements.add(new TextButton(Globals.GAME_WIDTH/2, 110, 60, "Welcome to the", Paint.Align.CENTER, false, 0, getContext()));
+            storeMenuElements.add(new TextButton(Globals.GAME_WIDTH/2, 200, 68, "Mayhem Store!", Paint.Align.CENTER, false, 0, getContext()));
+            storeMenuElements.add(new TextButton(Globals.GAME_WIDTH/2 - 85 - coinCountDigits/2 * 26 , 310, 35, "You have:", Paint.Align.CENTER, false, 0, getContext()));
+            storeMenuElements.add(new TextButton(Globals.GAME_WIDTH/2 + 100, 310, 35, String.valueOf(coinCount) , Paint.Align.CENTER, false, 0, getContext()));
+            storeMenuElements.add(new TextButton(Globals.GAME_WIDTH/2 + 195, 1220, 80, "++", Paint.Align.CENTER, true, 101, getContext()));
+            storeMenuElements.add(new TextButton(Globals.GAME_WIDTH/2 - 120, 1220, 55, "Main Menu", Paint.Align.CENTER, true, 1, getContext()));
+
+            int currentSkin = sharedPrefs.getInt("CURRENT_SKIN", 0);
+
+            int i = 0;
+            for (Skin skin: skins){
+                int skinStatus = sharedPrefs.getInt("SKIN_" + i, i==0?STATUS_OWNED:STATUS_UNOWNED);
+                if (skinStatus == STATUS_OWNED)
+                    ownedSkins.add(i);
+                storeMenuElements.add(new TextButton(75, 400 + i*100, (int)(40 - skin.name.length() * 0.8), skin.name, Paint.Align.LEFT, false, 0, getContext()));
+                storeMenuElements.add(new TextButton(450, 400 + i*100, 40, skinStatus == STATUS_UNOWNED?String.valueOf(skin.price):"", Paint.Align.LEFT, false, 0, getContext()));
+                storeMenuElements.add(new TextButton((currentSkin==i)?580:skinStatus == STATUS_UNOWNED? 620:600, 400 + i*100,
+                                                    (currentSkin==i)? 35:40,
+                                                    skinStatus == STATUS_UNOWNED?getResources().getString(R.string.button_buy):(currentSkin==i)?getResources().getString(R.string.button_equipped):getResources().getString(R.string.button_equip), Paint.Align.CENTER, true, 102 + i,
+                                                    getContext()));
+                i++;
+            }
+            ownedSkinsToIntArray();
+
 
             //notificationsButton = new NotificationsButton(context);
             score = new TextButton(Globals.BOUNDARY_WIDTH + 10, Globals.BOUNDARY_WIDTH + 40, 35, "Score: " + currentScore, Paint.Align.LEFT, false, 0, context);
@@ -206,13 +315,15 @@ public class MainGameScript extends SurfaceView implements SurfaceHolder.Callbac
 
             //Instantiate player and background
             player = new Player(getContext(), "white", "", "");
+            player.setSkin(skins[currentSkin]);
+
             otherPlayers = new Player[3];
             playerPingTimers = new int[3];
 
             //Create boundaries
             boundaries = new Boundaries();
 
-            spawner = new Spawner();
+            spawner = new Spawner(this);
         }
         if (gameState == 2){
             if (!mediaPlayer.isPlaying()){
@@ -225,6 +336,34 @@ public class MainGameScript extends SurfaceView implements SurfaceHolder.Callbac
         }
         thread.setIsRunning(true);
         thread.start();
+    }
+
+    public void ownedSkinsToIntArray(){
+        int n = 3; //THIS IS HARDCODED BECAUSE IT CORRESPONDS TO THE NUMBER OF PLAY GAMES LEADERBOARDS
+        int[] array = new int[n];
+        for (int i = 0; i < n; i++){
+            int currentInt = 0;
+            for (int j = 0; j < 30; j++){
+                if (ownedSkins.contains(i*30 + j))
+                    currentInt++;
+                currentInt = currentInt << 1;
+            }
+            currentInt = currentInt >> 1;
+            array[i] = currentInt;
+        }
+        Log.d("ownedSkinsToIntArray()", String.valueOf(array[0]) + " - " + String.valueOf(array[1]));
+    }
+
+    public void intArrayToOwnedSkins(int[] array){
+        int n = 3;
+        for (int i = 0; i < n; i++){
+            int current = array[i];
+            for (int j = 0; j < 30; j++){
+                if (current % 2 != 0)
+                    ownedSkins.add(n*30 + j);
+            }
+        }
+
     }
 
     @Override
@@ -389,6 +528,35 @@ public class MainGameScript extends SurfaceView implements SurfaceHolder.Callbac
                         }
                     }
                     return true;
+                case 6:
+                    if (event.getAction() == MotionEvent.ACTION_DOWN){
+                        Log.d("OnTouchEvent", "ACTION_MOVE");
+                        lastScrollPosition = (int)touchY;
+                        swipeStartY = touchY;
+                        for (TextButton button: storeMenuElements){
+                            if (button.isPressable){
+                                if (button.boundaries.contains((int)touchX, (int)touchY)){
+                                    button.isPressed = 1;
+                                }
+                            }
+                        }
+                    }
+                    if (event.getAction() == MotionEvent.ACTION_MOVE){
+                        storeScrollOffset += (int)(touchY - lastScrollPosition);
+                        Log.d("sdasd", "StoreScrollOffset: " + (touchY - lastScrollPosition));
+                        lastScrollPosition = (int)touchY;
+                    }
+                    if (event.getAction() == MotionEvent.ACTION_UP){
+                        for (TextButton button: storeMenuElements){
+                            if (button.isPressable){
+                                button.isPressed = 0;
+                                if ((Math.abs(touchY - swipeStartY) < 10) && button.boundaries.contains((int)touchX, (int)touchY)){
+                                    handleTextButton(button, getContext());
+                                }
+                            }
+                        }
+                    }
+                    return true;
 
             }
         }
@@ -404,7 +572,7 @@ public class MainGameScript extends SurfaceView implements SurfaceHolder.Callbac
                     googleApiClient.connect();
                 } else {
                     try{
-                        ((Activity)context).startActivityForResult(Games.Leaderboards.getLeaderboardIntent(googleApiClient, LEADERBOARD_ID), 9002);
+                        ((Activity)context).startActivityForResult(Games.Leaderboards.getLeaderboardIntent(googleApiClient, LEADERBOARD_HIGHSCORES_ID), 9002);
                     } catch (Exception e){
                         e.printStackTrace();
                         Toast toast = new Toast(context);
@@ -538,8 +706,81 @@ public class MainGameScript extends SurfaceView implements SurfaceHolder.Callbac
                     }
                 }
             }
+        } else if (button.statePointer > 100) {
+            if (button.statePointer == 101) {
+                startCoinVideo();
+            } else {
+                int skinId = button.statePointer - 102;
+                SharedPreferences prefs = context.getSharedPreferences("GAME_PREFERENCES", Context.MODE_PRIVATE);
+                int skinStatus = prefs.getInt("SKIN_" + skinId, STATUS_UNOWNED);
+                if (skinStatus == STATUS_UNOWNED) {
+                    if (coinCount >= skins[skinId].price) {
+                        storeMenuElements.get(6 + skinId * 3 + 2).setText(getResources().getString(R.string.button_equip));
+                        storeMenuElements.get(6 + skinId * 3 + 2).x = 600;
+                        storeMenuElements.get(6 + skinId * 3 + 2).setFontSize(40);
+                        storeMenuElements.get(6 + skinId * 3 + 2).updateBoundaries();
+
+                        storeMenuElements.get(6 + skinId * 3 + 1).setText("");
+                        coinCount -= skins[skinId].price;
+                        ownedSkins.add(skinId);
+
+                        SharedPreferences.Editor prefEditor = prefs.edit();
+                        prefEditor.putInt("SKIN_" + (skinId), STATUS_OWNED);
+                        prefEditor.putInt("COIN_COUNT", coinCount);
+                        prefEditor.apply();
+                        prefEditor.commit();
+                        Games.Leaderboards.submitScore(googleApiClient, LEADERBOARD_COINCOUNTS_ID, prefs.getInt("COIN_COUNT", 0));
+
+                        updateCoinCounts();
+                    } else {
+                        Toast toast = Toast.makeText(context, context.getResources().getString(R.string.toast_not_enough_coins), Toast.LENGTH_SHORT);
+                        toast.show();
+                    }
+                } else if (skinStatus == STATUS_OWNED){
+
+                    storeMenuElements.get(6 + prefs.getInt("CURRENT_SKIN", 0) * 3 + 2).setText(getResources().getString(R.string.button_equip));
+                    storeMenuElements.get(6 + prefs.getInt("CURRENT_SKIN", 0) * 3 + 2).x = 600;
+                    storeMenuElements.get(6 + prefs.getInt("CURRENT_SKIN", 0) * 3 + 2).setFontSize(40);
+                    storeMenuElements.get(6 + prefs.getInt("CURRENT_SKIN", 0) * 3 + 2).updateBoundaries();
+
+                    storeMenuElements.get(6 + skinId * 3 + 2).setText(getResources().getString(R.string.button_equipped));
+                    storeMenuElements.get(6 + skinId * 3 + 2).x = 570;
+                    storeMenuElements.get(6 + skinId * 3 + 2).setFontSize(35);
+                    storeMenuElements.get(6 + skinId * 3 + 2).updateBoundaries();
+
+                    currentSkin = skins[skinId];
+                    player.setSkin(currentSkin);
+
+                    SharedPreferences.Editor prefEditor = prefs.edit();
+                    prefEditor.putInt("CURRENT_SKIN", skinId);
+                    prefEditor.apply();
+                    prefEditor.commit();
+
+                }
+
+            }
         } else {
             nextGameState = button.statePointer;
+        }
+    }
+
+    public void loadOwnedSkins(){
+
+    }
+
+    public void updateCoinCounts(){
+        SharedPreferences sharedPrefs = context.getSharedPreferences("GAME_PREFERENCES", Context.MODE_PRIVATE);
+        coinCount = sharedPrefs.getInt("COIN_COUNT", 0);
+        storeMenuElements.get(3).setText(String.valueOf(coinCount));
+        mainMenuElements[1].setText(String.valueOf(coinCount));
+        gameOverMenuElements[5].setText(String.valueOf(coinCount));
+        coinCountDigits = getNumberOfDigits(coinCount);
+    }
+
+    public void startCoinVideo(){
+        Log.d("startCoindvideo()", "Started Coin videooeoeoeo");
+        if (context.mRewardedVideoAd.isLoaded()) {
+            context.mRewardedVideoAd.show();
         }
     }
 
@@ -751,7 +992,7 @@ public class MainGameScript extends SurfaceView implements SurfaceHolder.Callbac
                 }
                 checkBoundariesCollisions();
 
-                spawner.update(player.x, player.y, this);
+                spawner.update(player.x, player.y);
                 break;
             case 3:
                 if (multiplayer){
@@ -781,10 +1022,10 @@ public class MainGameScript extends SurfaceView implements SurfaceHolder.Callbac
                     player.isReady = false;
                     nextGameState = 2;
                 }
-                spawner.update(player.x, player.y, this);
+                spawner.update(player.x, player.y);
                 break;
             case 4:
-                spawner.update(player.x, player.y, this);
+                spawner.update(player.x, player.y);
                 player.update();
 
                 //This....animation code...is good, innit?
@@ -824,6 +1065,13 @@ public class MainGameScript extends SurfaceView implements SurfaceHolder.Callbac
                     player.isReady = false;
                 }
                 break;
+            case 6:
+                //Log.d("update()", "StoreScrollOffset:" + storeScrollOffset);
+                if (storeScrollOffset < -(skins.length * 100 - 8 * 100))//8 skins are displayed on the screen at a time, with 100px between each
+                    storeScrollOffset = -(skins.length * 100 - 8 * 100);
+                else if (storeScrollOffset > 0)
+                    storeScrollOffset = 0;
+                break;
 
         }
         handleGameStateChanges();
@@ -836,8 +1084,6 @@ public class MainGameScript extends SurfaceView implements SurfaceHolder.Callbac
             case 0:
                 break;
             case 1:
-                Log.d("HandleGameStateChag", "DNSAKDAKD1");
-
                 mediaPlayer.pause();
                 if (multiplayer && googleApiClient.isConnected()){
                     context.leaveRoom();
@@ -849,7 +1095,6 @@ public class MainGameScript extends SurfaceView implements SurfaceHolder.Callbac
                 otherPlayers = new Player[3];
                 gameState = 1;
                 nextGameState = 0;
-                Log.d("HandleGameStateChag", "DNSAKDAKD2");
                 break;
             //This happens when the play button is pressed
             case 2:
@@ -865,6 +1110,7 @@ public class MainGameScript extends SurfaceView implements SurfaceHolder.Callbac
 
             //This happens when the player dies
             case 3:
+                updateCoinCounts();
                 player.fadeoutCounter++;
 
                 mediaPlayer.setVolume(1 - 0.1f*player.fadeoutCounter, 1 - 0.1f*player.fadeoutCounter);
@@ -913,15 +1159,17 @@ public class MainGameScript extends SurfaceView implements SurfaceHolder.Callbac
 
                     SharedPreferences sharedPrefs = context.getSharedPreferences("GAME_PREFERENCES", Context.MODE_PRIVATE);
                     SharedPreferences.Editor prefEditor = sharedPrefs.edit();
-                    if (sharedPrefs.getInt("HIGH_SCORE", 0) < currentScore){
+                    if (sharedPrefs.getInt("HIGH_SCORE", 0) < currentScore)
                         prefEditor.putInt("HIGH_SCORE", currentScore);
-                        prefEditor.apply();
-                        prefEditor.commit();
-                    }
 
-                    Games.Leaderboards.submitScore(googleApiClient, LEADERBOARD_ID, sharedPrefs.getInt("HIGH_SCORE", 0));
+                    prefEditor.putInt("COIN_COUNT", coinCount);
+                    prefEditor.apply();
+                    prefEditor.commit();
+
+                    Games.Leaderboards.submitScore(googleApiClient, LEADERBOARD_HIGHSCORES_ID, sharedPrefs.getInt("HIGH_SCORE", 0));
+                    Games.Leaderboards.submitScore(googleApiClient, LEADERBOARD_COINCOUNTS_ID, sharedPrefs.getInt("COIN_COUNT", 0));
                     Log.d("GameOverScreen", "Score submitted to google play: " + sharedPrefs.getInt("HIGH_SCORE", 0));
-                    //Games.Leaderboards.loadCurrentPlayerLeaderboardScore(googleApiClient, LEADERBOARD_ID, LeaderboardVariant.TIME_SPAN_ALL_TIME, LeaderboardVariant.COLLECTION_PUBLIC);
+                    //Games.Leaderboards.loadCurrentPlayerLeaderboardScore(googleApiClient, LEADERBOARD_HIGHSCORES_ID, LeaderboardVariant.TIME_SPAN_ALL_TIME, LeaderboardVariant.COLLECTION_PUBLIC);
 
                     gameStateTimer = Globals.GAME_HEIGHT + 200;
                 }
@@ -938,6 +1186,11 @@ public class MainGameScript extends SurfaceView implements SurfaceHolder.Callbac
                 gameState = 5;
                 nextGameState = 0;
                 break;
+            case 6:
+                gameState = 6;
+                nextGameState = 0;
+                break;
+
         }
     }
 
@@ -949,7 +1202,7 @@ public class MainGameScript extends SurfaceView implements SurfaceHolder.Callbac
         player.isAlive = true;
         player.hasExploded = false;
         if (!multiplayer)
-            player.setSkin("White");
+            player.setSkin(currentSkin);
         for (int i=0; i<otherPlayers.length; i++){
             if (otherPlayers[i] != null){
                 otherPlayers[i].isReady = false;
@@ -997,7 +1250,9 @@ public class MainGameScript extends SurfaceView implements SurfaceHolder.Callbac
                 for (TextButton button: mainMenuElements){
                     button.draw(canvas);
                 }
+                canvas.drawBitmap(coinBitmap, Globals.GAME_WIDTH/2 - (coinCountDigits * 30)/2 - coinBitmap.getWidth() - 10, 477 - coinBitmap.getHeight(), logoPaint);
 
+                //canvas.drawBitmap(coinBitmap, Globals.GAME_WIDTH/2 - (coinCountDigits/2) * 30 - 35, 477 - coinBitmap.getHeight(), logoPaint);
 //                if (notificationsButton.isVisible)
 //                    notificationsButton.draw(canvas);
                 break;
@@ -1020,9 +1275,10 @@ public class MainGameScript extends SurfaceView implements SurfaceHolder.Callbac
 
                 score.setText("Score: " + currentScore);
                 score.draw(canvas);
+
                 if (nextGameState == 3){
                     for (TextButton button: gameOverMenuElements){
-                        if (button.statePointer == 6){
+                        if (button.statePointer == 100){
                             button.text = String.valueOf(currentScore);
                         }
                         button.draw(canvas);
@@ -1069,6 +1325,7 @@ public class MainGameScript extends SurfaceView implements SurfaceHolder.Callbac
                         }
                         button.draw(canvas);
                     }
+                    canvas.drawBitmap(coinBitmap, Globals.GAME_WIDTH/2 - coinCountDigits/2 * 35 - coinBitmap.getWidth() - 5, 758 - coinBitmap.getHeight(), logoPaint);
                 }
 
 //                if (notificationsButton.isVisible)
@@ -1108,6 +1365,63 @@ public class MainGameScript extends SurfaceView implements SurfaceHolder.Callbac
                 if (loadingIndicator.isVisible)
                     loadingIndicator.draw(canvas);
                 break;
+            case 6:
+                storeMenuElements.get(0).draw(canvas);
+                storeMenuElements.get(1).draw(canvas);
+                canvas.drawBitmap(coinBitmap, Globals.GAME_WIDTH/2 +100 - (coinCountDigits * 30)/2 - coinBitmap.getWidth() - 10, 310 - coinBitmap.getHeight(), logoPaint);
+                storeMenuElements.get(2).draw(canvas);
+                storeMenuElements.get(3).draw(canvas);
+                storeMenuElements.get(4).draw(canvas);
+                storeMenuElements.get(5).draw(canvas);
+                canvas.drawBitmap(getCoinsBitmap, Globals.GAME_WIDTH/2 + 170 - coinBitmap.getWidth(), 1190 - coinBitmap.getHeight(), logoPaint);
+
+
+                int i=0;
+                for (Skin skin: skins){
+                    scrolledButtonPosition = 400 + i*100 + storeScrollOffset;
+                    storeMenuElements.get(6+i*3).y = scrolledButtonPosition;
+                    storeMenuElements.get(6+i*3+1).y = scrolledButtonPosition;
+                    storeMenuElements.get(6+i*3+2).y = scrolledButtonPosition;
+
+                    storeMenuElements.get(6+i*3+2).boundaries.top = scrolledButtonPosition - storeMenuElements.get(6+i*3+2).boundaries.height();
+                    storeMenuElements.get(6+i*3+2).boundaries.bottom = scrolledButtonPosition;
+
+                    //This makes the items fade away as they are scrolled
+                    if (scrolledButtonPosition > 300 && scrolledButtonPosition < 400){
+                        logoPaint.setAlpha((int)(2.55 * (i*100 + storeScrollOffset-300)));
+                        storeMenuElements.get(6+i*3).paint.setAlpha((int)(2.55 * (scrolledButtonPosition-700)));
+                        storeMenuElements.get(6+i*3+1).paint.setAlpha((int)(2.55 * (scrolledButtonPosition-700)));
+                        storeMenuElements.get(6+i*3+2).paint.setAlpha((int)(2.55 * (scrolledButtonPosition-700)));
+                    } else if (scrolledButtonPosition > 1100 && scrolledButtonPosition < 1200){
+                        logoPaint.setAlpha(255 - (int)(2.55 * (i*100 + storeScrollOffset-1100)));
+                        storeMenuElements.get(6+i*3).paint.setAlpha(255 - (int)(2.55 * (scrolledButtonPosition-1500)));
+                        storeMenuElements.get(6+i*3+1).paint.setAlpha(255 - (int)(2.55 * (scrolledButtonPosition-1500)));
+                        storeMenuElements.get(6+i*3+2).paint.setAlpha(255 - (int)(2.55 * (scrolledButtonPosition-1500)));
+                    } else if (scrolledButtonPosition <= 300 || scrolledButtonPosition >= 1200){
+                        logoPaint.setAlpha(0);
+                        storeMenuElements.get(6+i*3).paint.setAlpha(0);
+                        storeMenuElements.get(6+i*3+1).paint.setAlpha(0);
+                        storeMenuElements.get(6+i*3+2).paint.setAlpha(0);
+                    }
+
+                    storeMenuElements.get(6+i*3).draw(canvas);
+                    storeMenuElements.get(6+i*3+1).draw(canvas);
+                    storeMenuElements.get(6+i*3+2).draw(canvas);
+
+                    canvas.drawBitmap(skin.bitmap, 50 - skin.bitmap.getWidth()/2, 400 + i*100 - skin.bitmap.getHeight() + storeScrollOffset, logoPaint);
+
+                    if (!ownedSkins.contains(i))
+                        canvas.drawBitmap(coinBitmap, 415, 400 + (i*100) - coinBitmap.getHeight() + storeScrollOffset, logoPaint);
+
+                    logoPaint.setAlpha(255);
+                    storeMenuElements.get(6+i*3).paint.setAlpha(255);
+                    storeMenuElements.get(6+i*3+1).paint.setAlpha(255);
+                    storeMenuElements.get(6+i*3+2).paint.setAlpha(255);
+                    i++;
+                }
+                //Log.d("Draw", "scrolledButtonPosition: " + storeMenuElements.get(2).y);
+
+                break;
         }
 
         //The game frame (game boundaries) is (are) always drawn
@@ -1118,5 +1432,16 @@ public class MainGameScript extends SurfaceView implements SurfaceHolder.Callbac
         //I'm not sure is this is crucial, but it should be tested on Jellybean devices, that's where it might break if
         //invalidate();
 
+    }
+
+    private int  getNumberOfDigits(int num){
+        int i = 1, aux = num, j = 0;
+        while (aux != 0){
+            aux = num;
+            aux /= i;
+            i *= 10;
+            j++;
+        }
+        return --j;
     }
 }
