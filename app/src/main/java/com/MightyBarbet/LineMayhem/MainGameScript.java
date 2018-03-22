@@ -47,11 +47,9 @@ public class MainGameScript extends SurfaceView implements SurfaceHolder.Callbac
 
     public static final int STATUS_UNOWNED = 0, STATUS_OWNED = 1;
     private final static String LEADERBOARD_HIGHSCORES_ID = "CgkIlaKbopsaEAIQAA", LEADERBOARD_COINCOUNTS_ID = "CgkIlaKbopsaEAIQCQ";
-    private final static String LEADERBOARD_OWNED_SKINS_1_ID = "CgkIlaKbopsaEAIQDA",
-            LEADERBOARD_OWNED_SKINS_2_ID = "CgkIlaKbopsaEAIQDQ",
-            LEADERBOARD_OWNED_SKINS_3_ID = "CgkIlaKbopsaEAIQDg",
-            LEADERBOARD_OWNED_SKINS_4_ID = "CgkIlaKbopsaEAIQDw",
-            LEADERBOARD_OWNED_SKINS_5_ID = "CgkIlaKbopsaEAIQEA";
+    private final static String LEADERBOARD_OWNED_SKINS_0_ID = "CgkIlaKbopsaEAIQDA",
+            LEADERBOARD_OWNED_SKINS_1_ID = "CgkIlaKbopsaEAIQDQ";
+    private final static int NUMBER_OF_SKINS = 35;
     public LineMayhem context;
     public MediaPlayer mediaPlayer;
     public boolean musicOn = true;
@@ -130,7 +128,8 @@ public class MainGameScript extends SurfaceView implements SurfaceHolder.Callbac
             new Skin("Happy", Bitmap.createScaledBitmap(BitmapFactory.decodeResource(getResources(), R.drawable.happy),  22, 22, false), 200),
             new Skin("Rainbow", Bitmap.createScaledBitmap(BitmapFactory.decodeResource(getResources(), R.drawable.rainbow),  22, 22, false), 200)
     };
-    ArrayList<Integer> ownedSkins = new ArrayList<>();
+    int[] ownedSkinsArray;
+    int[] ownedSkinsIntArray;
     Skin currentSkin;
     int storeScrollOffset = 0, lastScrollPosition;
     boolean scrolling = false;
@@ -185,43 +184,8 @@ public class MainGameScript extends SurfaceView implements SurfaceHolder.Callbac
                 e.printStackTrace();
             }
 
-            Games.Leaderboards.loadCurrentPlayerLeaderboardScore(googleApiClient, LEADERBOARD_HIGHSCORES_ID, LeaderboardVariant.TIME_SPAN_ALL_TIME, LeaderboardVariant.COLLECTION_PUBLIC).setResultCallback(new ResultCallback<Leaderboards.LoadPlayerScoreResult>() {
-                @Override
-                public void onResult(Leaderboards.LoadPlayerScoreResult arg0) {
-                    if (arg0.getScore() != null){
-                        SharedPreferences sharedPrefs = context.getSharedPreferences("GAME_PREFERENCES", Context.MODE_PRIVATE);
-                        SharedPreferences.Editor prefEditor = sharedPrefs.edit();
-                        if (sharedPrefs.getInt("HIGH_SCORE", 0) < (int)arg0.getScore().getRawScore()){
-                            mainMenuElements[0].setText("Highscore: " + arg0.getScore().getRawScore());
-                            prefEditor.putInt("HIGH_SCORE", (int)arg0.getScore().getRawScore());
-                            prefEditor.apply();
-                            prefEditor.commit();
-                        } else {
-                            Games.Leaderboards.submitScore(googleApiClient, LEADERBOARD_HIGHSCORES_ID, sharedPrefs.getInt("HIGH_SCORE", 0));
-                        }
-                    }
-                }
-            });
-            Games.Leaderboards.loadCurrentPlayerLeaderboardScore(googleApiClient, LEADERBOARD_HIGHSCORES_ID, LeaderboardVariant.TIME_SPAN_ALL_TIME, LeaderboardVariant.COLLECTION_PUBLIC);
+            loadPlayGamesData();
 
-            Games.Leaderboards.loadCurrentPlayerLeaderboardScore(googleApiClient, LEADERBOARD_COINCOUNTS_ID, LeaderboardVariant.TIME_SPAN_ALL_TIME, LeaderboardVariant.COLLECTION_PUBLIC).setResultCallback(new ResultCallback<Leaderboards.LoadPlayerScoreResult>() {
-                @Override
-                public void onResult(Leaderboards.LoadPlayerScoreResult arg0) {
-                    if (arg0.getScore() != null){
-                        SharedPreferences sharedPrefs = context.getSharedPreferences("GAME_PREFERENCES", Context.MODE_PRIVATE);
-                        SharedPreferences.Editor prefEditor = sharedPrefs.edit();
-                        if (sharedPrefs.getInt("COIN_COUNT", -999) == -999){ //If there is no coin count saved in SharedPreferences, we set the coinCount to that on Play Games
-                            prefEditor.putInt("COIN_COUNT", (int)arg0.getScore().getRawScore());
-                            prefEditor.apply();
-                            prefEditor.commit();
-                            updateCoinCounts();
-                        } else {
-                            Games.Leaderboards.submitScore(googleApiClient, LEADERBOARD_HIGHSCORES_ID, sharedPrefs.getInt("COIN_COUNT", 0));
-                        }
-                    }
-                }
-            });
-            Games.Leaderboards.loadCurrentPlayerLeaderboardScore(googleApiClient, LEADERBOARD_COINCOUNTS_ID, LeaderboardVariant.TIME_SPAN_ALL_TIME, LeaderboardVariant.COLLECTION_PUBLIC);
             scaleFactorX = getWidth()/(Globals.GAME_WIDTH * 1.0f);
             scaleFactorY = getHeight() / (Globals.GAME_HEIGHT * 1.0f);
 
@@ -291,12 +255,14 @@ public class MainGameScript extends SurfaceView implements SurfaceHolder.Callbac
             storeMenuElements.add(new TextButton(Globals.GAME_WIDTH/2 - 120, 1220, 55, "Main Menu", Paint.Align.CENTER, true, 1, getContext()));
 
             int currentSkin = sharedPrefs.getInt("CURRENT_SKIN", 0);
+            ownedSkinsArray = new int[2];
+            ownedSkinsArray[0] = sharedPrefs.getInt("OWNED_SKINS_0", 536870912); // This number is 2^29, or 100000000000000000000000000000
+            ownedSkinsArray[1] = sharedPrefs.getInt("OWNED_SKINS_1", 0);
+            ownedSkinsArray = intArrayToOwnedSkins(ownedSkinsArray);
 
             int i = 0;
             for (Skin skin: skins){
-                int skinStatus = sharedPrefs.getInt("SKIN_" + i, i==0?STATUS_OWNED:STATUS_UNOWNED);
-                if (skinStatus == STATUS_OWNED)
-                    ownedSkins.add(i);
+                int skinStatus = ownedSkinsArray[i];
                 storeMenuElements.add(new TextButton(75, 400 + i*100, (int)(40 - skin.name.length() * 0.8), skin.name, Paint.Align.LEFT, false, 0, getContext()));
                 storeMenuElements.add(new TextButton(450, 400 + i*100, 40, skinStatus == STATUS_UNOWNED?String.valueOf(skin.price):"", Paint.Align.LEFT, false, 0, getContext()));
                 storeMenuElements.add(new TextButton((currentSkin==i)?580:skinStatus == STATUS_UNOWNED? 620:600, 400 + i*100,
@@ -305,7 +271,7 @@ public class MainGameScript extends SurfaceView implements SurfaceHolder.Callbac
                                                     getContext()));
                 i++;
             }
-            ownedSkinsToIntArray();
+            //ownedSkinsToIntArray();
 
 
             //notificationsButton = new NotificationsButton(context);
@@ -338,31 +304,118 @@ public class MainGameScript extends SurfaceView implements SurfaceHolder.Callbac
         thread.start();
     }
 
-    public void ownedSkinsToIntArray(){
-        int n = 3; //THIS IS HARDCODED BECAUSE IT CORRESPONDS TO THE NUMBER OF PLAY GAMES LEADERBOARDS
+    public void loadPlayGamesData(){
+        Games.Leaderboards.loadCurrentPlayerLeaderboardScore(googleApiClient, LEADERBOARD_HIGHSCORES_ID, LeaderboardVariant.TIME_SPAN_ALL_TIME, LeaderboardVariant.COLLECTION_PUBLIC).setResultCallback(new ResultCallback<Leaderboards.LoadPlayerScoreResult>() {
+            @Override
+            public void onResult(Leaderboards.LoadPlayerScoreResult arg0) {
+                if (arg0.getScore() != null){
+                    SharedPreferences sharedPrefs = context.getSharedPreferences("GAME_PREFERENCES", Context.MODE_PRIVATE);
+                    SharedPreferences.Editor prefEditor = sharedPrefs.edit();
+                    if (sharedPrefs.getInt("HIGH_SCORE", 0) < (int)arg0.getScore().getRawScore()){
+                        mainMenuElements[0].setText("Highscore: " + arg0.getScore().getRawScore());
+                        prefEditor.putInt("HIGH_SCORE", (int)arg0.getScore().getRawScore());
+                        prefEditor.apply();
+                        prefEditor.commit();
+                    } else {
+                        Games.Leaderboards.submitScore(googleApiClient, LEADERBOARD_HIGHSCORES_ID, sharedPrefs.getInt("HIGH_SCORE", 0));
+                    }
+                }
+            }
+        });
+        Games.Leaderboards.loadCurrentPlayerLeaderboardScore(googleApiClient, LEADERBOARD_HIGHSCORES_ID, LeaderboardVariant.TIME_SPAN_ALL_TIME, LeaderboardVariant.COLLECTION_PUBLIC);
+
+        Games.Leaderboards.loadCurrentPlayerLeaderboardScore(googleApiClient, LEADERBOARD_COINCOUNTS_ID, LeaderboardVariant.TIME_SPAN_ALL_TIME, LeaderboardVariant.COLLECTION_PUBLIC).setResultCallback(new ResultCallback<Leaderboards.LoadPlayerScoreResult>() {
+            @Override
+            public void onResult(Leaderboards.LoadPlayerScoreResult arg0) {
+                if (arg0.getScore() != null){
+                    SharedPreferences sharedPrefs = context.getSharedPreferences("GAME_PREFERENCES", Context.MODE_PRIVATE);
+                    SharedPreferences.Editor prefEditor = sharedPrefs.edit();
+                    if (sharedPrefs.getInt("COIN_COUNT", -999) == -999){ //If there is no coin count saved in SharedPreferences, we set the coinCount to that on Play Games
+                        prefEditor.putInt("COIN_COUNT", (int)arg0.getScore().getRawScore());
+                        prefEditor.apply();
+                        prefEditor.commit();
+                        updateCoinCounts();
+                    } else {
+                        Games.Leaderboards.submitScore(googleApiClient, LEADERBOARD_HIGHSCORES_ID, sharedPrefs.getInt("COIN_COUNT", 0));
+                    }
+                }
+            }
+        });
+        Games.Leaderboards.loadCurrentPlayerLeaderboardScore(googleApiClient, LEADERBOARD_COINCOUNTS_ID, LeaderboardVariant.TIME_SPAN_ALL_TIME, LeaderboardVariant.COLLECTION_PUBLIC);
+
+        Games.Leaderboards.loadCurrentPlayerLeaderboardScore(googleApiClient, LEADERBOARD_OWNED_SKINS_0_ID, LeaderboardVariant.TIME_SPAN_ALL_TIME, LeaderboardVariant.COLLECTION_PUBLIC).setResultCallback(new ResultCallback<Leaderboards.LoadPlayerScoreResult>() {
+            @Override
+            public void onResult(Leaderboards.LoadPlayerScoreResult arg0) {
+                if (arg0.getScore() != null){
+                    SharedPreferences sharedPrefs = context.getSharedPreferences("GAME_PREFERENCES", Context.MODE_PRIVATE);
+                    SharedPreferences.Editor prefEditor = sharedPrefs.edit();
+                    if (sharedPrefs.getInt("COIN_COUNT", -999) == -999){
+                        prefEditor.putInt("COIN_COUNT", (int)arg0.getScore().getRawScore());
+                        prefEditor.apply();
+                        prefEditor.commit();
+                        updateCoinCounts();
+                    } else {
+                        Games.Leaderboards.submitScore(googleApiClient, LEADERBOARD_HIGHSCORES_ID, sharedPrefs.getInt("COIN_COUNT", 0));
+                    }
+                }
+            }
+        });
+        Games.Leaderboards.loadCurrentPlayerLeaderboardScore(googleApiClient, LEADERBOARD_OWNED_SKINS_0_ID, LeaderboardVariant.TIME_SPAN_ALL_TIME, LeaderboardVariant.COLLECTION_PUBLIC);
+
+        Games.Leaderboards.loadCurrentPlayerLeaderboardScore(googleApiClient, LEADERBOARD_OWNED_SKINS_1_ID, LeaderboardVariant.TIME_SPAN_ALL_TIME, LeaderboardVariant.COLLECTION_PUBLIC).setResultCallback(new ResultCallback<Leaderboards.LoadPlayerScoreResult>() {
+            @Override
+            public void onResult(Leaderboards.LoadPlayerScoreResult arg0) {
+                if (arg0.getScore() != null){
+                    SharedPreferences sharedPrefs = context.getSharedPreferences("GAME_PREFERENCES", Context.MODE_PRIVATE);
+                    SharedPreferences.Editor prefEditor = sharedPrefs.edit();
+                    if (sharedPrefs.getInt("COIN_COUNT", -999) == -999){
+                        prefEditor.putInt("COIN_COUNT", (int)arg0.getScore().getRawScore());
+                        prefEditor.apply();
+                        prefEditor.commit();
+                        updateCoinCounts();
+                    } else {
+                        Games.Leaderboards.submitScore(googleApiClient, LEADERBOARD_HIGHSCORES_ID, sharedPrefs.getInt("COIN_COUNT", 0));
+                    }
+                }
+            }
+        });
+        Games.Leaderboards.loadCurrentPlayerLeaderboardScore(googleApiClient, LEADERBOARD_OWNED_SKINS_1_ID, LeaderboardVariant.TIME_SPAN_ALL_TIME, LeaderboardVariant.COLLECTION_PUBLIC);
+    }
+
+    public int[] ownedSkinsToIntArray(int[] ownedSkinsArray){
+        int n = 2; //THIS IS HARDCODED BECAUSE IT CORRESPONDS TO THE NUMBER OF PLAY GAMES LEADERBOARDS
         int[] array = new int[n];
-        for (int i = 0; i < n; i++){
+        for (int i = 0; i < 2; i++){
             int currentInt = 0;
             for (int j = 0; j < 30; j++){
-                if (ownedSkins.contains(i*30 + j))
+                if (ownedSkinsArray[i*30 + j] == STATUS_OWNED)
                     currentInt++;
                 currentInt = currentInt << 1;
             }
             currentInt = currentInt >> 1;
             array[i] = currentInt;
         }
-        Log.d("ownedSkinsToIntArray()", String.valueOf(array[0]) + " - " + String.valueOf(array[1]));
+        return array;
+        //Log.d("ownedSkinsToIntArray()", String.valueOf(array[0]) + " - " + String.valueOf(array[1]));
+        //intArrayToOwnedSkins(array);
     }
 
-    public void intArrayToOwnedSkins(int[] array){
-        int n = 3;
-        for (int i = 0; i < n; i++){
+    public int[] intArrayToOwnedSkins(int[] array){
+        int[] ownedSkinsArray = new int[NUMBER_OF_SKINS];
+        int n = 2;
+        for (int i = 1; i >= 0; i--){
             int current = array[i];
-            for (int j = 0; j < 30; j++){
+            for (int j = 29; j >= 0; j--){
                 if (current % 2 != 0)
-                    ownedSkins.add(n*30 + j);
+                    ownedSkinsArray[i*30 + j] = STATUS_OWNED;
+                else
+                    ownedSkinsArray[i*30 + j] = STATUS_UNOWNED;
+                current = current >> 1;
             }
         }
+        return ownedSkinsArray;
+//        for (Integer skinId: ownedSkins)
+//            Log.d("intArrayToOwnedSkins()", skinId + " - ");
 
     }
 
@@ -712,7 +765,7 @@ public class MainGameScript extends SurfaceView implements SurfaceHolder.Callbac
             } else {
                 int skinId = button.statePointer - 102;
                 SharedPreferences prefs = context.getSharedPreferences("GAME_PREFERENCES", Context.MODE_PRIVATE);
-                int skinStatus = prefs.getInt("SKIN_" + skinId, STATUS_UNOWNED);
+                int skinStatus = ownedSkinsArray[skinId];
                 if (skinStatus == STATUS_UNOWNED) {
                     if (coinCount >= skins[skinId].price) {
                         storeMenuElements.get(6 + skinId * 3 + 2).setText(getResources().getString(R.string.button_equip));
@@ -722,14 +775,20 @@ public class MainGameScript extends SurfaceView implements SurfaceHolder.Callbac
 
                         storeMenuElements.get(6 + skinId * 3 + 1).setText("");
                         coinCount -= skins[skinId].price;
-                        ownedSkins.add(skinId);
+                        ownedSkinsArray[skinId] = STATUS_OWNED;
+
+                        ownedSkinsIntArray = ownedSkinsToIntArray(ownedSkinsArray);
 
                         SharedPreferences.Editor prefEditor = prefs.edit();
-                        prefEditor.putInt("SKIN_" + (skinId), STATUS_OWNED);
+                        prefEditor.putInt("OWNED_SKINS_0", ownedSkinsIntArray[0]);
+                        prefEditor.putInt("OWNED_SKINS_1", ownedSkinsIntArray[1]);
                         prefEditor.putInt("COIN_COUNT", coinCount);
                         prefEditor.apply();
                         prefEditor.commit();
                         Games.Leaderboards.submitScore(googleApiClient, LEADERBOARD_COINCOUNTS_ID, prefs.getInt("COIN_COUNT", 0));
+                        Games.Leaderboards.submitScore(googleApiClient, LEADERBOARD_OWNED_SKINS_0_ID, prefs.getInt("OWNED_SKINS_0", 0));
+                        Games.Leaderboards.submitScore(googleApiClient, LEADERBOARD_OWNED_SKINS_1_ID, prefs.getInt("OWNED_SKINS_1", 0));
+
 
                         updateCoinCounts();
                     } else {
@@ -1410,7 +1469,7 @@ public class MainGameScript extends SurfaceView implements SurfaceHolder.Callbac
 
                     canvas.drawBitmap(skin.bitmap, 50 - skin.bitmap.getWidth()/2, 400 + i*100 - skin.bitmap.getHeight() + storeScrollOffset, logoPaint);
 
-                    if (!ownedSkins.contains(i))
+                    if (ownedSkinsArray[i] == STATUS_UNOWNED)
                         canvas.drawBitmap(coinBitmap, 415, 400 + (i*100) - coinBitmap.getHeight() + storeScrollOffset, logoPaint);
 
                     logoPaint.setAlpha(255);
